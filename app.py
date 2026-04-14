@@ -128,5 +128,10 @@ def calcs():
     return render_template("calcs/index.html")
 
 
+@app.get("/speaker-load-planner")
+def speaker_load_planner():
+    return render_template("speaker_load_planner/index.html")
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

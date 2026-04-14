@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Speaker Load Planner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='speaker_load_planner/styles.css') }}">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">New Planning Tool</p>
+        <h1>Speaker Load Planner</h1>
+        <p class="hero-copy">
+          Enter the amp channel power and impedance, the number of channels, and the total
+          number of identical speakers you need to use. The tool will propose the best
+          distribution across channels and the closest safe wiring arrangement for each one.
+        </p>
+      </div>
+
+      <div class="hero-actions">
+        <a class="btn btn-ghost" href="{{ url_for('home') }}">Back to Front Page</a>
+        <button id="export-csv" class="btn btn-primary" type="button">Export CSV</button>
+        <button id="reset-form" class="btn btn-secondary" type="button">Reset Tool</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel">
+        <div class="panel-heading">
+          <h2>Inputs</h2>
+          <p>Use this for identical low-impedance speakers that need splitting across amp channels.</p>
+        </div>
+
+        <div class="input-grid">
+          <label>
+            Project Name
+            <input id="project-name" type="text" placeholder="Optional project name">
+          </label>
+          <label>
+            Amp Name
+            <input id="amp-name" type="text" placeholder="Optional amp reference">
+          </label>
+          <label>
+            Power Per Channel (W)
+            <input id="power-per-channel" type="number" min="1" step="1" value="250">
+          </label>
+          <label>
+            Rated Channel Impedance (ohms)
+            <input id="rated-impedance" type="number" min="1" step="1" value="4">
+          </label>
+          <label>
+            Number Of Channels
+            <input id="channel-count" type="number" min="1" step="1" value="2">
+          </label>
+          <label>
+            Total Speakers To Use
+            <input id="speaker-count" type="number" min="1" step="1" value="4">
+          </label>
+          <label>
+            Speaker Impedance (ohms)
+            <input id="speaker-impedance" type="number" min="1" step="1" value="8">
+          </label>
+          <label>
+            Speaker Power (W each)
+            <input id="speaker-wattage" type="number" min="1" step="1" value="60">
+          </label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <h2>Recommended Plan</h2>
+          <p>The planner prefers the closest safe impedance match and then the most balanced channel split.</p>
+        </div>
+
+        <div id="summary-grid" class="summary-grid"></div>
+        <div id="recommendation" class="recommendation"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <h2>Channel Breakdown</h2>
+          <p>Each active channel shows the suggested speaker quantity, wiring approach, load, and a wiring note.</p>
+        </div>
+
+        <div id="channel-results" class="channel-results"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="{{ url_for('static', filename='speaker_load_planner/app.js') }}"></script>
+</body>
+</html>
