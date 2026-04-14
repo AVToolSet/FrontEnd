@@ -46,6 +46,21 @@
             <input id="amp-name" type="text" placeholder="Optional amp reference">
           </label>
           <label>
+            Amp Manufacturer
+            <select id="amp-brand">
+              <option value="custom">Custom / Manual Entry</option>
+              <option value="extron" selected>Extron</option>
+              <option value="qsc">QSC</option>
+              <option value="jbl">JBL</option>
+              <option value="crestron">Crestron</option>
+              <option value="crown">Crown</option>
+            </select>
+          </label>
+          <label id="amp-model-group">
+            Amp Model
+            <select id="amp-model-select"></select>
+          </label>
+          <label>
             Power Per Channel (W)
             <input id="power-per-channel" type="number" min="1" step="1" value="250">
           </label>
@@ -56,6 +71,21 @@
           <label>
             Number Of Channels
             <input id="channel-count" type="number" min="1" step="1" value="2">
+          </label>
+          <label>
+            Speaker Manufacturer
+            <select id="speaker-brand">
+              <option value="custom">Custom / Manual Entry</option>
+              <option value="extron" selected>Extron</option>
+              <option value="qsc">QSC</option>
+              <option value="jbl">JBL</option>
+              <option value="crestron">Crestron</option>
+              <option value="crown">Crown</option>
+            </select>
+          </label>
+          <label id="speaker-model-group">
+            Speaker Model
+            <select id="speaker-model-select"></select>
           </label>
           <label>
             Total Speakers To Use

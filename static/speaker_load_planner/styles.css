@@ -37,7 +37,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -148,7 +149,8 @@ label {
   font-size: 0.94rem;
 }
 
-input {
+input,
+select {
   width: 100%;
   padding: 12px 13px;
   color: var(--ink);
@@ -158,6 +160,7 @@ input {
 }
 
 input:focus,
+select:focus,
 button:focus {
   outline: 2px solid rgba(45, 95, 148, 0.2);
   outline-offset: 2px;
