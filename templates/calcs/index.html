@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Amp and Speaker Pairing Calculator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='calcs/styles.css') }}">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Pairing Tool</p>
+        <h1>Amp and Speaker Suitability Calculator</h1>
+        <p class="hero-copy">
+          Add an amp, set its power and impedance rating, then load each channel with speakers.
+          Flip each channel between series and parallel wiring to check total load and safe headroom.
+        </p>
+      </div>
+
+      <div class="hero-actions">
+        <a class="btn btn-ghost" href="{{ url_for('home') }}">Back to Front Page</a>
+        <button id="add-amp" class="btn btn-primary" type="button">Add Amp</button>
+        <button id="export-csv" class="btn btn-secondary" type="button">Export CSV</button>
+        <button id="reset-project" class="btn btn-ghost" type="button">New Blank Project</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel">
+        <div class="panel-heading">
+          <h2>Project Details</h2>
+          <p>Name the job and assign its SEQF reference.</p>
+        </div>
+        <div id="project-meta" class="amp-grid"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <h2>Overview</h2>
+          <p>Quick health check across all amp channels.</p>
+        </div>
+        <div id="summary-grid" class="summary-grid"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <h2>Amplifiers</h2>
+          <p>Step 1: define the amp. Step 2: add speakers to each channel.</p>
+        </div>
+        <div id="amps-container" class="amps-container"></div>
+      </section>
+    </main>
+  </div>
+
+  <template id="stat-card-template">
+    <article class="stat-card">
+      <p class="stat-label"></p>
+      <p class="stat-value"></p>
+    </article>
+  </template>
+
+  <script src="{{ url_for('static', filename='calcs/app.js') }}"></script>
+</body>
+</html>

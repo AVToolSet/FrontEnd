@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Register Generator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='docreg/styles.css') }}">
+</head>
+<body>
+    <main class="page-shell">
+        <section class="hero">
+            <div>
+                <p class="eyebrow">Online Excel Generator</p>
+                <h1>Document Register Generator</h1>
+                <p class="hero-copy">Build a clean Document Register workbook in the browser and download the Excel file instantly.</p>
+            </div>
+            <div class="hero-panel">
+                <a class="home-link" href="{{ url_for('home') }}">Back to Front Page</a>
+                <label for="seqf_number">SEQF Number</label>
+                <input form="generator-form" id="seqf_number" name="seqf_number" type="text" inputmode="numeric" maxlength="6" placeholder="6 digits" value="{{ seqf_number }}">
+                <p>Workbook output: <strong>Document Register</strong></p>
+            </div>
+        </section>
+
+        {% if error_message %}
+            <section class="alerts">
+                <div class="alert error">{{ error_message }}</div>
+            </section>
+        {% endif %}
+
+        <form id="generator-form" method="post" action="{{ url_for('docreg_generate') }}">
+            <section class="toolbar">
+                <div>
+                    <h2>Areas</h2>
+                    <p>Add each area and tick only the drawing types you need.</p>
+                </div>
+                <div class="toolbar-actions">
+                    <button class="button secondary" type="button" id="add-area">Add Area</button>
+                    <button class="button primary" type="submit">Generate Workbook</button>
+                </div>
+            </section>
+
+            <section id="areas" class="areas">
+                {% for area in area_entries %}
+                    <article class="area-card" data-area-index="{{ area.index }}">
+                        <div class="area-header">
+                            <div>
+                                <p class="area-kicker">Area {{ loop.index }}</p>
+                                <label class="area-label" for="area_name_{{ area.index }}">Area Name</label>
+                            </div>
+                            <button class="text-button" type="button" data-remove-area>Remove</button>
+                        </div>
+
+                        <input class="area-name-input" id="area_name_{{ area.index }}" name="area_name" type="text" placeholder="Enter area name" value="{{ area.name }}">
+
+                        <div class="group-grid">
+                            {% for group_name, codes in drawing_groups %}
+                                <section class="group-card">
+                                    <h3>{{ group_name }}</h3>
+                                    <div class="check-list">
+                                        {% for code, label in codes %}
+                                            <label class="check-item">
+                                                <input type="checkbox" name="area_{{ area.index }}_{{ code }}" value="on" {% if code in area.selected_codes %}checked{% endif %}>
+                                                <span><strong>{{ code }}</strong> {{ label }}</span>
+                                            </label>
+                                        {% endfor %}
+                                    </div>
+                                </section>
+                            {% endfor %}
+                        </div>
+                    </article>
+                {% endfor %}
+            </section>
+        </form>
+    </main>
+
+    <template id="area-template">
+        <article class="area-card" data-area-index="__INDEX__">
+            <div class="area-header">
+                <div>
+                    <p class="area-kicker">Area __NUMBER__</p>
+                    <label class="area-label" for="area_name___INDEX__">Area Name</label>
+                </div>
+                <button class="text-button" type="button" data-remove-area>Remove</button>
+            </div>
+            <input class="area-name-input" id="area_name___INDEX__" name="area_name" type="text" placeholder="Enter area name">
+            <div class="group-grid">
+                {% for group_name, codes in drawing_groups %}
+                    <section class="group-card">
+                        <h3>{{ group_name }}</h3>
+                        <div class="check-list">
+                            {% for code, label in codes %}
+                                <label class="check-item">
+                                    <input type="checkbox" name="area___INDEX___{{ code }}" value="on">
+                                    <span><strong>{{ code }}</strong> {{ label }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </section>
+                {% endfor %}
+            </div>
+        </article>
+    </template>
+
+    <script>
+        const DOCREG_DRAFT_KEY = "docreg-form-draft-v1";
+        const areas = document.getElementById("areas");
+        const addAreaButton = document.getElementById("add-area");
+        const template = document.getElementById("area-template");
+        const seqfInput = document.getElementById("seqf_number");
+
+        function updateAreaLabels() {
+            const cards = [...areas.querySelectorAll(".area-card")];
+            cards.forEach((card, index) => {
+                card.dataset.areaIndex = index;
+                const kicker = card.querySelector(".area-kicker");
+                if (kicker) kicker.textContent = `Area ${index + 1}`;
+            });
+        }
+
+        function captureDraft() {
+            const draft = {
+                seqfNumber: seqfInput.value,
+                areas: [...areas.querySelectorAll(".area-card")].map((card, index) => ({
+                    index,
+                    name: card.querySelector(".area-name-input")?.value || "",
+                    selectedCodes: [...card.querySelectorAll("input[type='checkbox']:checked")].map((checkbox) => {
+                        const name = checkbox.name || "";
+                        return Number(name.split("_").at(-1));
+                    }),
+                })),
+            };
+            localStorage.setItem(DOCREG_DRAFT_KEY, JSON.stringify(draft));
+        }
+
+        function buildAreaHtml(index, area = { name: "", selectedCodes: [] }) {
+            let html = template.innerHTML
+                .replaceAll("__INDEX__", String(index))
+                .replaceAll("__NUMBER__", String(index + 1));
+
+            const wrapper = document.createElement("div");
+            wrapper.innerHTML = html.trim();
+            const card = wrapper.firstElementChild;
+
+            const nameInput = card.querySelector(".area-name-input");
+            if (nameInput) nameInput.value = area.name || "";
+
+            area.selectedCodes.forEach((code) => {
+                const checkbox = card.querySelector(`input[name="area_${index}_${code}"]`);
+                if (checkbox) checkbox.checked = true;
+            });
+
+            return card.outerHTML;
+        }
+
+        function addArea() {
+            const index = areas.querySelectorAll(".area-card").length;
+            const html = buildAreaHtml(index);
+            areas.insertAdjacentHTML("beforeend", html);
+            updateAreaLabels();
+            captureDraft();
+        }
+
+        function restoreDraftIfNeeded() {
+            const hasServerData =
+                seqfInput.value.trim() ||
+                [...areas.querySelectorAll(".area-card")].some((card) =>
+                    (card.querySelector(".area-name-input")?.value || "").trim() ||
+                    card.querySelector("input[type='checkbox']:checked")
+                );
+
+            if (hasServerData) {
+                captureDraft();
+                return;
+            }
+
+            const raw = localStorage.getItem(DOCREG_DRAFT_KEY);
+            if (!raw) return;
+
+            try {
+                const draft = JSON.parse(raw);
+                if (!draft || !Array.isArray(draft.areas) || !draft.areas.length) return;
+
+                seqfInput.value = draft.seqfNumber || "";
+                areas.innerHTML = "";
+                draft.areas.forEach((area, index) => {
+                    areas.insertAdjacentHTML("beforeend", buildAreaHtml(index, area));
+                });
+                updateAreaLabels();
+            } catch (error) {
+                console.warn("Failed to restore DocReg draft", error);
+            }
+        }
+
+        addAreaButton.addEventListener("click", addArea);
+        seqfInput.addEventListener("input", captureDraft);
+        areas.addEventListener("input", captureDraft);
+        areas.addEventListener("change", captureDraft);
+
+        areas.addEventListener("click", (event) => {
+            if (!event.target.matches("[data-remove-area]")) return;
+            const cards = areas.querySelectorAll(".area-card");
+            if (cards.length === 1) {
+                const input = cards[0].querySelector(".area-name-input");
+                if (input) input.value = "";
+                cards[0].querySelectorAll("input[type='checkbox']").forEach((checkbox) => {
+                    checkbox.checked = false;
+                });
+                captureDraft();
+                return;
+            }
+            event.target.closest(".area-card").remove();
+            updateAreaLabels();
+            captureDraft();
+        });
+
+        document.getElementById("generator-form").addEventListener("submit", () => {
+            setTimeout(captureDraft, 0);
+        });
+
+        restoreDraftIfNeeded();
+    </script>
+</body>
+</html>
