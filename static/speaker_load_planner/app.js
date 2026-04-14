@@ -454,6 +454,9 @@ function scoreDistribution(distribution, ratedImpedance, speakerImpedance, power
     const totalSpeakerPower = count * speakerWattage;
     const estimatedAmpOutput = plan ? estimateAmpPowerAtLoad(powerPerChannel, ratedImpedance, plan.totalImpedance) : 0;
     const utilization = estimatedAmpOutput > 0 ? totalSpeakerPower / estimatedAmpOutput : 0;
+    const impedanceSafe = Boolean(plan?.safe);
+    const powerSafe = estimatedAmpOutput > 0 && utilization <= 1;
+    const viable = impedanceSafe && powerSafe;
 
     return {
       channelNumber: index + 1,
@@ -463,13 +466,17 @@ function scoreDistribution(distribution, ratedImpedance, speakerImpedance, power
       totalSpeakerPower,
       estimatedAmpOutput,
       utilization,
+      impedanceSafe,
+      powerSafe,
+      viable,
     };
   });
 
   const activeChannels = channelPlans.filter((channel) => !channel.idle);
-  const safeChannels = activeChannels.filter((channel) => channel.safe).length;
-  const allSafe = activeChannels.length > 0 && safeChannels === activeChannels.length;
+  const viableChannels = activeChannels.filter((channel) => channel.viable).length;
+  const allViable = activeChannels.length > 0 && viableChannels === activeChannels.length;
   const deltaSum = activeChannels.reduce((sum, channel) => sum + (channel.delta || 0), 0);
+  const utilizationPenalty = activeChannels.reduce((sum, channel) => sum + Math.max(0, channel.utilization - 1), 0);
   const counts = activeChannels.map((channel) => channel.speakerCount);
   const imbalance = counts.length ? Math.max(...counts) - Math.min(...counts) : 0;
   const averageSpeakers = activeChannels.length
@@ -481,10 +488,11 @@ function scoreDistribution(distribution, ratedImpedance, speakerImpedance, power
   return {
     distribution,
     channelPlans,
-    allSafe,
-    safeChannels,
+    allViable,
+    viableChannels,
     activeChannels: activeChannels.length,
     deltaSum,
+    utilizationPenalty,
     imbalance,
     spreadPenalty,
     maxSpeakersOnChannel,
@@ -502,11 +510,17 @@ function calculateRecommendation(inputs) {
   );
 
   scored.sort((left, right) => {
-    if (left.allSafe !== right.allSafe) {
-      return left.allSafe ? -1 : 1;
+    if (left.allViable !== right.allViable) {
+      return left.allViable ? -1 : 1;
     }
-    if (left.safeChannels !== right.safeChannels) {
-      return right.safeChannels - left.safeChannels;
+    if (left.viableChannels !== right.viableChannels) {
+      return right.viableChannels - left.viableChannels;
+    }
+    if (left.utilizationPenalty !== right.utilizationPenalty) {
+      return left.utilizationPenalty - right.utilizationPenalty;
+    }
+    if (left.deltaSum !== right.deltaSum) {
+      return left.deltaSum - right.deltaSum;
     }
     if (left.imbalance !== right.imbalance) {
       return left.imbalance - right.imbalance;
@@ -516,9 +530,6 @@ function calculateRecommendation(inputs) {
     }
     if (left.maxSpeakersOnChannel !== right.maxSpeakersOnChannel) {
       return left.maxSpeakersOnChannel - right.maxSpeakersOnChannel;
-    }
-    if (left.deltaSum !== right.deltaSum) {
-      return left.deltaSum - right.deltaSum;
     }
     return right.activeChannels - left.activeChannels;
   });
@@ -548,12 +559,12 @@ function renderRecommendation(inputs, recommendation) {
   }
 
   const totalSpeakerPower = inputs.speakerCount * inputs.speakerWattage;
-  const compromise = !recommendation.allSafe;
+  const compromise = !recommendation.allViable;
 
   elements.summaryGrid.innerHTML = [
     renderSummaryCard("Channels Used", `${recommendation.activeChannels} / ${inputs.channelCount}`),
     renderSummaryCard("Speaker Split", recommendation.distribution.filter((count) => count > 0).join(" / ")),
-    renderSummaryCard("Safe Channels", `${recommendation.safeChannels} / ${recommendation.activeChannels}`),
+    renderSummaryCard("Viable Channels", `${recommendation.viableChannels} / ${recommendation.activeChannels}`),
     renderSummaryCard("Total Speaker Power", formatWatts(totalSpeakerPower)),
   ].join("");
 
@@ -563,18 +574,22 @@ function renderRecommendation(inputs, recommendation) {
     <p class="note">
       ${
         compromise
-          ? "No fully safe split was found across every active channel, so this result is the closest overall impedance match."
-          : "This split gives the closest safe impedance match while keeping the speaker quantities as balanced as practical."
+          ? "No fully viable split was found across every active channel, so this result is the closest practical compromise once impedance and available amp power are both considered."
+          : "This split gives the closest viable impedance and power match while keeping the speaker quantities as balanced as practical."
       }
     </p>
   `;
 
   const activeChannels = recommendation.channelPlans.filter((channel) => !channel.idle);
   elements.channelResults.innerHTML = activeChannels.map((channel) => `
-    <article class="channel-card ${channel.safe ? "safe" : "compromise"}">
+    <article class="channel-card ${channel.viable ? "safe" : "compromise"}">
       <p class="mini-label">Channel ${channel.channelNumber}</p>
       <h3>${channel.speakerCount} speakers</h3>
-      <p class="note">${escapeHtml(channel.name)} is the recommended wiring approach for this channel.</p>
+      <p class="note">${
+        channel.viable
+          ? `${escapeHtml(channel.name)} is the recommended wiring approach for this channel.`
+          : `Closest available wiring is ${escapeHtml(channel.name)}, but this channel is still outside a viable amp/speaker match.`
+      }</p>
 
       <div class="channel-meta">
         <div class="meta-box">
@@ -667,7 +682,7 @@ function exportCsv() {
       Math.round(channel.estimatedAmpOutput),
       Math.round(channel.totalSpeakerPower),
       formatPercent(channel.utilization),
-      channel.safe ? "Yes" : "No",
+      channel.viable ? "Yes" : "No",
       channel.diagram,
     ]);
   });
