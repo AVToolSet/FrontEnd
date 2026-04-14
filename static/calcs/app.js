@@ -296,6 +296,7 @@ function renderAmp(amp) {
 
 function renderChannel(amp, channel) {
   const stats = calculateChannelStats(amp, channel);
+  const wiringPlan = channel.mode === "low-impedance" ? getOptimumWiringPlan(amp, channel) : null;
 
   return `
     <section class="channel-card">
@@ -359,6 +360,42 @@ function renderChannel(amp, channel) {
           ${statusLabel(stats.status)}
         </span>
       </div>
+
+      ${
+        channel.mode === "low-impedance"
+          ? `
+            <div class="wiring-plan ${wiringPlan?.recommended ? "recommended" : "not-ready"}">
+              <div class="wiring-plan-header">
+                <div>
+                  <p class="mini-label">Optimum Wiring</p>
+                  <p class="wiring-plan-title">${
+                    wiringPlan?.recommended
+                      ? escapeHtml(wiringPlan.name)
+                      : "Enter amp impedance and speaker impedances"
+                  }</p>
+                </div>
+                <span class="pill ${wiringPlan?.recommended && wiringPlan.safe ? "ok" : wiringPlan?.recommended ? "caution" : ""}">
+                  ${
+                    wiringPlan?.recommended
+                      ? `${formatOhms(wiringPlan.totalImpedance)} target load`
+                      : "No recommendation yet"
+                  }
+                </span>
+              </div>
+              <p class="note">${
+                wiringPlan?.recommended
+                  ? escapeHtml(wiringPlan.summary)
+                  : "The calculator will suggest the closest safe series/parallel arrangement once the channel has enough data."
+              }</p>
+              ${
+                wiringPlan?.recommended
+                  ? `<pre class="wiring-diagram">${escapeHtml(wiringPlan.diagram)}</pre>`
+                  : ""
+              }
+            </div>
+          `
+          : ""
+      }
 
       <div class="speaker-list">
         ${channel.speakers.map((speaker) => renderSpeaker(amp.id, channel.id, channel.mode, speaker)).join("")}
@@ -514,6 +551,187 @@ function calculateChannelImpedance(channel) {
   return 1 / impedances.reduce((sum, impedance) => sum + 1 / impedance, 0);
 }
 
+function getChannelSpeakerUnits(channel) {
+  return channel.speakers.flatMap((speaker, speakerIndex) =>
+    Array.from({ length: speaker.quantity }, (_, unitIndex) => ({
+      label: `L${speakerIndex + 1}.${unitIndex + 1}`,
+      impedance: Number(speaker.impedance) || 0,
+    })),
+  ).filter((unit) => unit.impedance > 0);
+}
+
+function calculateParallelImpedance(values) {
+  if (!values.length || values.some((value) => value <= 0)) {
+    return Infinity;
+  }
+
+  return 1 / values.reduce((sum, value) => sum + 1 / value, 0);
+}
+
+function chunkUnits(units, groupCount) {
+  if (groupCount <= 0 || units.length % groupCount !== 0) {
+    return null;
+  }
+
+  const groupSize = units.length / groupCount;
+  const groups = [];
+
+  for (let index = 0; index < units.length; index += groupSize) {
+    groups.push(units.slice(index, index + groupSize));
+  }
+
+  return groups.every((group) => group.length > 0) ? groups : null;
+}
+
+function buildWiringDiagram(name, groups, groupJoin, finalJoin) {
+  const lines = [`${name}`];
+
+  if (groupJoin === "series") {
+    lines.push("Amp + to first speaker + in each branch.");
+    groups.forEach((group, index) => {
+      const speakerChain = group.map((unit) => unit.label).join(" + -> - ");
+      lines.push(`Branch ${index + 1}: ${speakerChain}`);
+    });
+    lines.push("Join the final - of every branch together back to Amp -.");
+  } else {
+    groups.forEach((group, index) => {
+      const speakerList = group.map((unit) => unit.label).join(", ");
+      lines.push(`Group ${index + 1}: tie all + together (${speakerList}), tie all - together.`);
+    });
+    lines.push("Wire the groups in series:");
+    lines.push(groups.map((_, index) => `Group ${index + 1}`).join(" -> "));
+    lines.push("Amp + to Group 1 +, link Group 1 - to Group 2 + and continue, final group - back to Amp -.");
+  }
+
+  if (finalJoin === "parallel") {
+    lines.push("Result: branch positives commoned at Amp +, branch negatives commoned at Amp -.");
+  } else {
+    lines.push("Result: the grouped blocks form one series path between Amp + and Amp -.");
+  }
+
+  return lines.join("\n");
+}
+
+function buildCandidate(name, units, topology, groupCount = 1) {
+  if (!units.length) {
+    return null;
+  }
+
+  if (topology === "parallel") {
+    const totalImpedance = calculateParallelImpedance(units.map((unit) => unit.impedance));
+    return {
+      name: "All Parallel",
+      totalImpedance,
+      diagram: [
+        "All Parallel",
+        `Tie all + cores together: ${units.map((unit) => unit.label).join(", ")}`,
+        `Tie all - cores together: ${units.map((unit) => unit.label).join(", ")}`,
+        "Common + to Amp +, common - to Amp -.",
+      ].join("\n"),
+    };
+  }
+
+  if (topology === "series") {
+    const totalImpedance = units.reduce((sum, unit) => sum + unit.impedance, 0);
+    return {
+      name: "All Series",
+      totalImpedance,
+      diagram: [
+        "All Series",
+        `Chain speakers in order: ${units.map((unit) => unit.label).join(" -> ")}`,
+        "Amp + to first speaker +, each speaker - to next speaker +, final speaker - back to Amp -.",
+      ].join("\n"),
+    };
+  }
+
+  const groups = chunkUnits(units, groupCount);
+  if (!groups || groups.some((group) => group.length < 2)) {
+    return null;
+  }
+
+  if (topology === "series-parallel") {
+    const groupImpedances = groups.map((group) => group.reduce((sum, unit) => sum + unit.impedance, 0));
+    return {
+      name: `${groups.length} series branches in parallel`,
+      totalImpedance: calculateParallelImpedance(groupImpedances),
+      diagram: buildWiringDiagram(`${groups.length} series branches in parallel`, groups, "series", "parallel"),
+    };
+  }
+
+  if (topology === "parallel-series") {
+    const groupImpedances = groups.map((group) => calculateParallelImpedance(group.map((unit) => unit.impedance)));
+    return {
+      name: `${groups.length} parallel groups in series`,
+      totalImpedance: groupImpedances.reduce((sum, value) => sum + value, 0),
+      diagram: buildWiringDiagram(`${groups.length} parallel groups in series`, groups, "parallel", "series"),
+    };
+  }
+
+  return null;
+}
+
+function getOptimumWiringPlan(amp, channel) {
+  const ratedImpedance = Number(channel.ratedImpedance) || 0;
+  const ampPower = Number(amp.powerPerChannel) || 0;
+  const units = getChannelSpeakerUnits(channel);
+
+  if (!ratedImpedance || !units.length) {
+    return { recommended: false };
+  }
+
+  const candidates = [
+    buildCandidate("All Parallel", units, "parallel"),
+    buildCandidate("All Series", units, "series"),
+  ];
+
+  for (let groupCount = 2; groupCount <= Math.floor(units.length / 2); groupCount += 1) {
+    if (units.length % groupCount !== 0) {
+      continue;
+    }
+    candidates.push(buildCandidate("", units, "series-parallel", groupCount));
+    candidates.push(buildCandidate("", units, "parallel-series", groupCount));
+  }
+
+  const validCandidates = candidates
+    .filter((candidate) => candidate && Number.isFinite(candidate.totalImpedance) && candidate.totalImpedance > 0)
+    .map((candidate) => ({
+      ...candidate,
+      safe: candidate.totalImpedance >= ratedImpedance,
+      delta: Math.abs(candidate.totalImpedance - ratedImpedance),
+    }));
+
+  if (!validCandidates.length) {
+    return { recommended: false };
+  }
+
+  validCandidates.sort((left, right) => {
+    if (left.safe !== right.safe) {
+      return left.safe ? -1 : 1;
+    }
+    if (left.delta !== right.delta) {
+      return left.delta - right.delta;
+    }
+    return left.totalImpedance - right.totalImpedance;
+  });
+
+  const best = validCandidates[0];
+  const estimatedAmpOutput = ampPower > 0
+    ? estimateAmpPowerAtLoad(ampPower, ratedImpedance, best.totalImpedance)
+    : 0;
+  const totalSpeakerPower = channel.speakers.reduce((sum, speaker) => sum + speaker.quantity * (Number(speaker.wattage) || 0), 0);
+  const utilization = estimatedAmpOutput > 0 ? totalSpeakerPower / estimatedAmpOutput : 0;
+
+  return {
+    ...best,
+    recommended: true,
+    estimatedAmpOutput,
+    utilization,
+    summary: best.safe
+      ? `Best safe match is ${best.name.toLowerCase()} at ${formatOhms(best.totalImpedance)} against a ${formatOhms(ratedImpedance)} amp channel.${ampPower > 0 ? ` Estimated amp output is ${formatWatts(estimatedAmpOutput)}.` : ""}`
+      : `No safe wiring option reaches ${formatOhms(ratedImpedance)}. Closest match is ${best.name.toLowerCase()} at ${formatOhms(best.totalImpedance)}. Treat this as a compromise only.`,
+  };
+}
+
 function estimateAmpPowerAtLoad(powerPerChannel, ratedImpedance, actualImpedance) {
   const voltage = Math.sqrt(powerPerChannel * ratedImpedance);
   return (voltage * voltage) / actualImpedance;
@@ -650,11 +868,15 @@ async function exportCsv() {
     "Status",
     "Load",
     "Channel Rated Impedance Ohms",
+    "Optimum Wiring",
+    "Optimum Wiring Load",
+    "Optimum Wiring Notes",
   ]];
 
   state.amps.forEach((amp) => {
     amp.channels.forEach((channel) => {
       const stats = calculateChannelStats(amp, channel);
+      const wiringPlan = channel.mode === "low-impedance" ? getOptimumWiringPlan(amp, channel) : null;
       rows.push([
         state.projectName,
         state.seqfNumber,
@@ -671,6 +893,9 @@ async function exportCsv() {
         statusLabel(stats.status),
         stats.loadLabel,
         String(channel.ratedImpedance ?? ""),
+        wiringPlan?.recommended ? wiringPlan.name : "",
+        wiringPlan?.recommended ? formatOhms(wiringPlan.totalImpedance) : "",
+        wiringPlan?.recommended ? wiringPlan.diagram : "",
       ]);
     });
   });

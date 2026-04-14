@@ -339,6 +339,50 @@ select:hover {
   margin-top: 16px;
 }
 
+.wiring-plan {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(244, 248, 252, 0.92), #ffffff);
+}
+
+.wiring-plan.recommended {
+  border-color: rgba(31, 95, 139, 0.18);
+}
+
+.wiring-plan.not-ready {
+  border-style: dashed;
+}
+
+.wiring-plan-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: start;
+  flex-wrap: wrap;
+}
+
+.wiring-plan-title {
+  margin-top: 6px;
+  font-size: 1.02rem;
+  font-weight: 700;
+}
+
+.wiring-diagram {
+  margin: 14px 0 0;
+  padding: 14px;
+  overflow-x: auto;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(22, 32, 42, 0.09);
+  background: #f8fbfe;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
 .pill {
   padding: 7px 10px;
   border-radius: 999px;
