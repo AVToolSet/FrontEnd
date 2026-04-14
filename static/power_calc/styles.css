@@ -78,13 +78,18 @@ input:focus, select:focus { outline: 2px solid rgba(122,69,13,0.22); border-colo
 .meter { overflow: hidden; height: 16px; border-radius: 999px; background: rgba(35,27,21,0.08); }
 .meter-fill { width: 0%; height: 100%; border-radius: inherit; background: var(--green); transition: width 180ms ease, background-color 180ms ease; }
 .meter-text { margin: 10px 0 0; }
-.ports-header, .port-row { display: grid; grid-template-columns: 92px minmax(180px, 1fr) minmax(180px, 220px) 170px; gap: 14px; align-items: center; }
+.ports-header, .port-row { display: grid; grid-template-columns: 92px minmax(180px, 1fr) 110px minmax(180px, 220px) 170px; gap: 14px; align-items: center; }
 .ports-header { padding: 0 8px 10px; border-bottom: 1px solid rgba(35,27,21,0.08); color: var(--muted); font-size: 0.86rem; text-transform: uppercase; letter-spacing: 0.05em; }
 .ports-container { display: grid; gap: 12px; margin-top: 16px; }
 .port-row { padding: 14px; border-radius: 20px; background: rgba(255,255,255,0.74); border: 1px solid rgba(35,27,21,0.08); }
 .port-badge { min-height: 46px; padding: 0 12px; background: #efe7dd; color: var(--text); }
 .port-draw { display: flex; flex-direction: column; gap: 4px; }
+.btu-toggle { flex-direction: row; align-items: center; justify-content: center; gap: 10px; font-weight: 700; }
+.btu-toggle input { width: 18px; height: 18px; margin: 0; }
+.btu-toggle span { color: var(--muted); font-size: 0.9rem; }
 .support-note.warning { color: var(--red); font-weight: 700; }
 @media (max-width: 920px) {
   .hero, .app-grid, .switch-form, .summary-grid { grid-template-columns: 1fr; }
+  .ports-header, .port-row { grid-template-columns: 1fr; }
+  .btu-toggle { justify-content: flex-start; }
 }

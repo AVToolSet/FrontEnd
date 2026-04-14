@@ -1,4 +1,5 @@
 const STORAGE_KEY = "power-calculator-draft-v1";
+const BTU_PER_WATT = 3.412;
 
 const PDU_CATALOG = {
   gude: {
@@ -120,6 +121,8 @@ const elements = {
   summaryLimitLoad: document.querySelector("#summary-limit-load"),
   summaryUsage: document.querySelector("#summary-usage"),
   summaryCurrent: document.querySelector("#summary-current"),
+  summaryBtuLoad: document.querySelector("#summary-btu-load"),
+  summaryBtuOutput: document.querySelector("#summary-btu-output"),
   summaryHeadroom: document.querySelector("#summary-headroom"),
   meterFill: document.querySelector("#meter-fill"),
   meterText: document.querySelector("#meter-text"),
@@ -127,6 +130,7 @@ const elements = {
 
 const formatWatts = (value) => `${Math.round(value)}W`;
 const formatCurrent = (value) => `${value.toFixed(2)}A`;
+const formatBtu = (value) => `${Math.round(value)} BTU/h`;
 
 function defaultCatalogModelIndex(brand) {
   if (!PDU_CATALOG[brand]) return "";
@@ -137,6 +141,7 @@ function saveState() {
   const rows = [...elements.portsContainer.querySelectorAll(".port-row")].map((row) => ({
     deviceName: row.querySelector(".device-name").value,
     wattage: row.querySelector(".device-wattage-input").value,
+    includeBtu: row.querySelector(".include-btu").checked,
   }));
 
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
@@ -179,6 +184,7 @@ function createOutletRow(index) {
   row.dataset.outletIndex = String(index);
   row.querySelector(".port-badge").textContent = `Outlet ${index + 1}`;
   row.querySelector(".device-name").addEventListener("input", updateCalculator);
+  row.querySelector(".include-btu").addEventListener("change", updateCalculator);
   row.querySelector(".device-wattage-input").addEventListener("input", updateCalculator);
   row.querySelector(".device-wattage-input").addEventListener("change", updateCalculator);
   return fragment;
@@ -261,6 +267,7 @@ function restoreState() {
     if (!row) return;
     row.querySelector(".device-name").value = savedRow.deviceName || "";
     row.querySelector(".device-wattage-input").value = savedRow.wattage || "0";
+    row.querySelector(".include-btu").checked = Boolean(savedRow.includeBtu);
   });
 }
 
@@ -268,8 +275,15 @@ function updateOutletCurrents(voltage) {
   [...elements.portsContainer.querySelectorAll(".port-row")].forEach((row) => {
     const wattage = Math.max(0, Number.parseFloat(row.querySelector(".device-wattage-input").value) || 0);
     const current = voltage > 0 ? wattage / voltage : 0;
+    const includeBtu = row.querySelector(".include-btu").checked;
     row.querySelector(".device-current").textContent = formatCurrent(current);
-    row.querySelector(".support-note").textContent = wattage > 0 ? "Counted in total load" : "Within limit";
+    if (wattage <= 0) {
+      row.querySelector(".support-note").textContent = "No load entered";
+    } else if (includeBtu) {
+      row.querySelector(".support-note").textContent = "Included in BTU target";
+    } else {
+      row.querySelector(".support-note").textContent = "Excluded from BTU target";
+    }
   });
 }
 
@@ -286,6 +300,11 @@ function updateCalculator() {
 
   const rows = [...elements.portsContainer.querySelectorAll(".port-row")];
   const totalWatts = rows.reduce((sum, row) => sum + Math.max(0, Number.parseFloat(row.querySelector(".device-wattage-input").value) || 0), 0);
+  const btuSelectedWatts = rows.reduce((sum, row) => {
+    const watts = Math.max(0, Number.parseFloat(row.querySelector(".device-wattage-input").value) || 0);
+    return sum + (row.querySelector(".include-btu").checked ? watts : 0);
+  }, 0);
+  const btuOutput = btuSelectedWatts * BTU_PER_WATT;
   const totalCurrent = voltage > 0 ? totalWatts / voltage : 0;
   const usagePercent = ratedCurrent > 0 ? (totalCurrent / ratedCurrent) * 100 : 0;
   const status = getStatus(usagePercent);
@@ -301,6 +320,8 @@ function updateCalculator() {
   elements.summaryLimitLoad.textContent = formatWatts(limitWatts);
   elements.summaryUsage.textContent = formatWatts(totalWatts);
   elements.summaryCurrent.textContent = formatCurrent(totalCurrent);
+  elements.summaryBtuLoad.textContent = formatWatts(btuSelectedWatts);
+  elements.summaryBtuOutput.textContent = formatBtu(btuOutput);
   elements.meterFill.style.width = `${Math.min(usagePercent, 100)}%`;
   elements.meterFill.style.backgroundColor = status.color;
   elements.meterText.textContent = `${usagePercent.toFixed(1)}% of the PDU current rating is currently assigned.`;
@@ -324,10 +345,13 @@ function exportCsv() {
   const voltage = Math.max(1, Number.parseFloat(elements.voltage.value) || 230);
   const ratedCurrent = Math.max(0, Number.parseFloat(elements.current.value) || 0);
   const safeCurrent = ratedCurrent * 0.8;
-  const totalWatts = [...elements.portsContainer.querySelectorAll(".port-row")].reduce(
-    (sum, row) => sum + Math.max(0, Number.parseFloat(row.querySelector(".device-wattage-input").value) || 0),
-    0,
-  );
+  const rows = [...elements.portsContainer.querySelectorAll(".port-row")];
+  const totalWatts = rows.reduce((sum, row) => sum + Math.max(0, Number.parseFloat(row.querySelector(".device-wattage-input").value) || 0), 0);
+  const btuSelectedWatts = rows.reduce((sum, row) => {
+    const watts = Math.max(0, Number.parseFloat(row.querySelector(".device-wattage-input").value) || 0);
+    return sum + (row.querySelector(".include-btu").checked ? watts : 0);
+  }, 0);
+  const btuOutput = btuSelectedWatts * BTU_PER_WATT;
 
   const lines = [
     ["PDU Name", elements.pduName.value.trim() || "Not set"],
@@ -338,18 +362,23 @@ function exportCsv() {
     ["Recommended Safe Current (A)", safeCurrent.toFixed(2)],
     ["Outlet Count", String(elements.outletCount.value)],
     ["Total Device Usage (W)", totalWatts.toFixed(1)],
+    ["BTU Selected Load (W)", btuSelectedWatts.toFixed(1)],
+    ["Estimated BTU per Hour", btuOutput.toFixed(0)],
     ["Estimated Current Draw (A)", (totalWatts / voltage).toFixed(2)],
     [],
-    ["Outlet", "Device", "Estimated Draw (W)", "Estimated Current (A)"],
+    ["Outlet", "Device", "Include In BTU", "Estimated Draw (W)", "Estimated Current (A)", "Estimated BTU/h"],
   ];
 
-  [...elements.portsContainer.querySelectorAll(".port-row")].forEach((row, index) => {
+  rows.forEach((row, index) => {
     const watts = Math.max(0, Number.parseFloat(row.querySelector(".device-wattage-input").value) || 0);
+    const includeBtu = row.querySelector(".include-btu").checked;
     lines.push([
       `Outlet ${index + 1}`,
       row.querySelector(".device-name").value.trim(),
+      includeBtu ? "Yes" : "No",
       watts.toFixed(1),
       (watts / voltage).toFixed(2),
+      includeBtu ? (watts * BTU_PER_WATT).toFixed(0) : "0",
     ]);
   });
 
@@ -367,6 +396,7 @@ function resetForm() {
   [...elements.portsContainer.querySelectorAll(".port-row")].forEach((row) => {
     row.querySelector(".device-name").value = "";
     row.querySelector(".device-wattage-input").value = "0";
+    row.querySelector(".include-btu").checked = false;
   });
   updateCalculator();
 }

@@ -14,7 +14,8 @@
         <h1>PDU Load Planner</h1>
         <p class="hero-text">
           Select a PDU or enter one manually, assign mains-powered devices to each outlet, and
-          instantly see total watts, current draw, safe operating headroom, and overload risk.
+          instantly see total watts, current draw, BTU output for selected devices, safe
+          operating headroom, and overload risk.
         </p>
       </div>
       <div class="hero-panel">
@@ -109,6 +110,8 @@
           <div class="summary-box"><span class="summary-label">Absolute Limit</span><strong id="summary-limit-load">3680W</strong></div>
           <div class="summary-box"><span class="summary-label">Device Usage</span><strong id="summary-usage">0W</strong></div>
           <div class="summary-box"><span class="summary-label">Current Draw</span><strong id="summary-current">0.00A</strong></div>
+          <div class="summary-box"><span class="summary-label">BTU Selected Load</span><strong id="summary-btu-load">0W</strong></div>
+          <div class="summary-box"><span class="summary-label">Estimated BTU/h</span><strong id="summary-btu-output">0 BTU/h</strong></div>
           <div class="summary-box"><span class="summary-label">Headroom / Over</span><strong id="summary-headroom">2944W headroom</strong></div>
         </div>
 
@@ -125,6 +128,7 @@
         <div class="ports-header">
           <span>Outlet</span>
           <span>Device</span>
+          <span>BTU</span>
           <span>Estimated Draw (W)</span>
           <span>Estimated Current</span>
         </div>
@@ -138,6 +142,10 @@
     <div class="port-row">
       <div class="port-badge"></div>
       <label><input class="device-name" type="text" placeholder="e.g. DSP, monitor, player"></label>
+      <label class="btu-toggle">
+        <input class="include-btu" type="checkbox">
+        <span>Include</span>
+      </label>
       <label><input class="device-wattage-input" type="number" min="0" step="1" value="0"></label>
       <div class="port-draw">
         <strong class="device-current">0.00A</strong>
