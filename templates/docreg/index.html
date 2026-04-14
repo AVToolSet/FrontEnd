@@ -120,7 +120,6 @@
 
         function captureDraft() {
             const draft = {
-                seqfNumber: seqfInput.value,
                 areas: [...areas.querySelectorAll(".area-card")].map((card, index) => ({
                     index,
                     name: card.querySelector(".area-name-input")?.value || "",
@@ -163,7 +162,6 @@
 
         function restoreDraftIfNeeded() {
             const hasServerData =
-                seqfInput.value.trim() ||
                 [...areas.querySelectorAll(".area-card")].some((card) =>
                     (card.querySelector(".area-name-input")?.value || "").trim() ||
                     card.querySelector("input[type='checkbox']:checked")
@@ -181,7 +179,7 @@
                 const draft = JSON.parse(raw);
                 if (!draft || !Array.isArray(draft.areas) || !draft.areas.length) return;
 
-                seqfInput.value = draft.seqfNumber || "";
+                seqfInput.value = "";
                 areas.innerHTML = "";
                 draft.areas.forEach((area, index) => {
                     areas.insertAdjacentHTML("beforeend", buildAreaHtml(index, area));
@@ -193,7 +191,6 @@
         }
 
         addAreaButton.addEventListener("click", addArea);
-        seqfInput.addEventListener("input", captureDraft);
         areas.addEventListener("input", captureDraft);
         areas.addEventListener("change", captureDraft);
 
