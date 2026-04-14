@@ -7,7 +7,11 @@ const AMP_CATALOG = {
       { model: "XPA U 2002", powerPerChannel: 200, ratedImpedance: 4, channelCount: 2 },
       { model: "XPA U 2004", powerPerChannel: 200, ratedImpedance: 4, channelCount: 4 },
       { model: "XPA 1002", powerPerChannel: 100, ratedImpedance: 8, channelCount: 2 },
+      { model: "XPA 1004", powerPerChannel: 100, ratedImpedance: 8, channelCount: 4 },
+      { model: "XPA 2002", powerPerChannel: 200, ratedImpedance: 8, channelCount: 2 },
+      { model: "XPA 2004", powerPerChannel: 200, ratedImpedance: 8, channelCount: 4 },
       { model: "XPA 2003C 70V", powerPerChannel: 200, ratedImpedance: 4, channelCount: 3 },
+      { model: "XPA 4002", powerPerChannel: 400, ratedImpedance: 8, channelCount: 2 },
     ],
   },
   qsc: {
@@ -17,6 +21,10 @@ const AMP_CATALOG = {
       { model: "CX-Q 4K8", powerPerChannel: 1200, ratedImpedance: 8, channelCount: 8 },
       { model: "SPA2-200", powerPerChannel: 200, ratedImpedance: 4, channelCount: 2 },
       { model: "PLD4.2", powerPerChannel: 300, ratedImpedance: 8, channelCount: 4 },
+      { model: "PLD4.3", powerPerChannel: 500, ratedImpedance: 8, channelCount: 4 },
+      { model: "PLD4.5", powerPerChannel: 625, ratedImpedance: 8, channelCount: 4 },
+      { model: "CXD4.2", powerPerChannel: 300, ratedImpedance: 8, channelCount: 4 },
+      { model: "CXD4.3", powerPerChannel: 500, ratedImpedance: 8, channelCount: 4 },
     ],
   },
   jbl: {
@@ -26,6 +34,9 @@ const AMP_CATALOG = {
       { model: "CSA 180Z", powerPerChannel: 80, ratedImpedance: 4, channelCount: 4 },
       { model: "CDi 2|300", powerPerChannel: 300, ratedImpedance: 4, channelCount: 2 },
       { model: "CDi 4|600", powerPerChannel: 600, ratedImpedance: 4, channelCount: 4 },
+      { model: "CDi 2|600", powerPerChannel: 600, ratedImpedance: 4, channelCount: 2 },
+      { model: "CDi 4|300", powerPerChannel: 300, ratedImpedance: 4, channelCount: 4 },
+      { model: "CSA 280Z", powerPerChannel: 80, ratedImpedance: 4, channelCount: 8 },
     ],
   },
   crestron: {
@@ -35,6 +46,8 @@ const AMP_CATALOG = {
       { model: "AMP-X50MP", powerPerChannel: 50, ratedImpedance: 4, channelCount: 4 },
       { model: "CNAMPX-16X60", powerPerChannel: 60, ratedImpedance: 8, channelCount: 16 },
       { model: "AMP-3210T", powerPerChannel: 210, ratedImpedance: 4, channelCount: 2 },
+      { model: "AMP-2210T", powerPerChannel: 120, ratedImpedance: 4, channelCount: 2 },
+      { model: "AMP-X150", powerPerChannel: 75, ratedImpedance: 8, channelCount: 2 },
     ],
   },
   crown: {
@@ -44,6 +57,9 @@ const AMP_CATALOG = {
       { model: "DCi 4|600", powerPerChannel: 600, ratedImpedance: 4, channelCount: 4 },
       { model: "XLS 1002", powerPerChannel: 350, ratedImpedance: 4, channelCount: 2 },
       { model: "XLS 1502", powerPerChannel: 525, ratedImpedance: 4, channelCount: 2 },
+      { model: "XLS 2002", powerPerChannel: 650, ratedImpedance: 4, channelCount: 2 },
+      { model: "XLS 2502", powerPerChannel: 775, ratedImpedance: 4, channelCount: 2 },
+      { model: "DCi 8|300", powerPerChannel: 300, ratedImpedance: 4, channelCount: 8 },
     ],
   },
 };
@@ -56,6 +72,10 @@ const SPEAKER_CATALOG = {
       { model: "SM 26", impedance: 8, wattage: 50 },
       { model: "SF 3C LP", impedance: 8, wattage: 16 },
       { model: "SM 28", impedance: 8, wattage: 100 },
+      { model: "SM 3", impedance: 8, wattage: 25 },
+      { model: "SM 5", impedance: 8, wattage: 50 },
+      { model: "SM 6", impedance: 8, wattage: 60 },
+      { model: "SI 26", impedance: 8, wattage: 100 },
     ],
   },
   qsc: {
@@ -65,6 +85,10 @@ const SPEAKER_CATALOG = {
       { model: "AD-C6T", impedance: 8, wattage: 30 },
       { model: "AC-S4T", impedance: 8, wattage: 30 },
       { model: "AD-P6T", impedance: 8, wattage: 60 },
+      { model: "AD-S8T", impedance: 8, wattage: 250 },
+      { model: "AD-C8T", impedance: 8, wattage: 60 },
+      { model: "AD-S12", impedance: 8, wattage: 400 },
+      { model: "AD-S282H", impedance: 8, wattage: 500 },
     ],
   },
   jbl: {
@@ -74,6 +98,39 @@ const SPEAKER_CATALOG = {
       { model: "Control 16C/T", impedance: 8, wattage: 60 },
       { model: "Control 26CT", impedance: 8, wattage: 150 },
       { model: "Control 28-1", impedance: 8, wattage: 175 },
+      { model: "Control 23-1", impedance: 8, wattage: 100 },
+      { model: "Control 24C/T", impedance: 8, wattage: 120 },
+      { model: "Control 47C/T", impedance: 8, wattage: 150 },
+      { model: "AC16", impedance: 8, wattage: 150 },
+    ],
+  },
+  "k-array": {
+    label: "K-Array",
+    models: [
+      { model: "Lyzard KZ1 I", impedanceOptions: [32], wattage: 10 },
+      { model: "Lyzard KZ14 I", impedanceOptions: [16], wattage: 100 },
+      { model: "Vyper KV25 II", impedanceOptions: [8, 16], wattage: 200 },
+      { model: "Vyper KV52 II", impedanceOptions: [8, 16], wattage: 400 },
+      { model: "Vyper KV102 II", impedanceOptions: [8], wattage: 800 },
+      { model: "Kobra KK52 I", impedanceOptions: [16], wattage: 500 },
+      { model: "Kobra KK102 I", impedanceOptions: [8], wattage: 1000 },
+      { model: "Python KP52 I", impedanceOptions: [16], wattage: 600 },
+      { model: "Python KP102 I", impedanceOptions: [8], wattage: 1200 },
+      { model: "Kayman KY52", impedanceOptions: [16], wattage: 500 },
+      { model: "Kayman KY102", impedanceOptions: [8], wattage: 1000 },
+      { model: "Domino KF26", impedanceOptions: [16], wattage: 1000 },
+      { model: "Domino KFC26", impedanceOptions: [16], wattage: 1000 },
+      { model: "Domino KF210", impedanceOptions: [8], wattage: 2000 },
+      { model: "Domino KF212", impedanceOptions: [8], wattage: 2400 },
+      { model: "Tornado KT2", impedanceOptions: [16, 32], wattage: 150 },
+      { model: "Tornado KT2C", impedanceOptions: [16, 32], wattage: 150 },
+      { model: "Tornado KT4", impedanceOptions: [16], wattage: 300 },
+      { model: "Tornado KT6", impedanceOptions: [8, 16], wattage: 500 },
+      { model: "Anakonda KAN200", impedanceOptions: [8], wattage: 900 },
+      { model: "Anakonda KAN200+", impedanceOptions: [8], wattage: 900 },
+      { model: "Anakonda KAN200+8", impedanceOptions: [8], wattage: 900 },
+      { model: "Koral KO70", impedanceOptions: [8], wattage: 300 },
+      { model: "Koral KO102", impedanceOptions: [8], wattage: 800 },
     ],
   },
   crestron: {
@@ -83,6 +140,9 @@ const SPEAKER_CATALOG = {
       { model: "SAROS IC8T-W-T-EACH", impedance: 8, wattage: 100 },
       { model: "SAROS PD6T-B-T-EACH", impedance: 8, wattage: 60 },
       { model: "SAROS IC4T-W-T-EACH", impedance: 8, wattage: 30 },
+      { model: "SAROS IC6-W-T-EACH", impedance: 8, wattage: 60 },
+      { model: "SAROS IC8-W-T-EACH", impedance: 8, wattage: 100 },
+      { model: "SAROS LBP-6T-B-T-EACH", impedance: 8, wattage: 60 },
     ],
   },
   crown: {
@@ -92,6 +152,8 @@ const SPEAKER_CATALOG = {
       { model: "ComTech wall speaker", impedance: 8, wattage: 60 },
       { model: "CDi install speaker", impedance: 8, wattage: 120 },
       { model: "DriveCore monitor speaker", impedance: 8, wattage: 150 },
+      { model: "DCi demo monitor", impedance: 8, wattage: 200 },
+      { model: "XLS install speaker", impedance: 8, wattage: 250 },
     ],
   },
 };
@@ -106,6 +168,7 @@ const DEFAULTS = {
   channelCount: "2",
   speakerBrand: "extron",
   speakerModelSelect: "0",
+  speakerImpedanceVariant: "",
   speakerCount: "4",
   speakerImpedance: "8",
   speakerWattage: "30",
@@ -123,6 +186,8 @@ const elements = {
   speakerBrand: document.querySelector("#speaker-brand"),
   speakerModelSelect: document.querySelector("#speaker-model-select"),
   speakerModelGroup: document.querySelector("#speaker-model-group"),
+  speakerImpedanceVariant: document.querySelector("#speaker-impedance-variant"),
+  speakerImpedanceVariantGroup: document.querySelector("#speaker-impedance-variant-group"),
   speakerCount: document.querySelector("#speaker-count"),
   speakerImpedance: document.querySelector("#speaker-impedance"),
   speakerWattage: document.querySelector("#speaker-wattage"),
@@ -183,6 +248,7 @@ function getInputState() {
     channelCount: elements.channelCount.value,
     speakerBrand: elements.speakerBrand.value,
     speakerModelSelect: elements.speakerModelSelect.value,
+    speakerImpedanceVariant: elements.speakerImpedanceVariant.value,
     speakerCount: elements.speakerCount.value,
     speakerImpedance: elements.speakerImpedance.value,
     speakerWattage: elements.speakerWattage.value,
@@ -229,7 +295,24 @@ function applySpeakerModel() {
     return;
   }
 
-  elements.speakerImpedance.value = String(selectedModel.impedance);
+  const impedanceOptions = selectedModel.impedanceOptions || (selectedModel.impedance ? [selectedModel.impedance] : []);
+  if (impedanceOptions.length > 1) {
+    elements.speakerImpedanceVariantGroup.hidden = false;
+    elements.speakerImpedanceVariant.innerHTML = impedanceOptions
+      .map((value) => `<option value="${value}">${value} ohms</option>`)
+      .join("");
+    if (!impedanceOptions.map(String).includes(elements.speakerImpedanceVariant.value)) {
+      elements.speakerImpedanceVariant.value = String(impedanceOptions[0]);
+    }
+    elements.speakerImpedance.value = elements.speakerImpedanceVariant.value;
+    elements.speakerImpedance.readOnly = true;
+  } else {
+    elements.speakerImpedanceVariantGroup.hidden = true;
+    elements.speakerImpedanceVariant.innerHTML = "";
+    elements.speakerImpedanceVariant.value = impedanceOptions.length ? String(impedanceOptions[0]) : "";
+    elements.speakerImpedance.value = impedanceOptions.length ? String(impedanceOptions[0]) : "";
+    elements.speakerImpedance.readOnly = elements.speakerBrand.value !== "custom";
+  }
   elements.speakerWattage.value = String(selectedModel.wattage);
 }
 
@@ -240,6 +323,7 @@ function syncCatalogMode() {
   elements.ampModelGroup.hidden = ampIsManual;
   elements.speakerModelGroup.hidden = speakerIsManual;
   elements.ampName.readOnly = !ampIsManual;
+  elements.speakerImpedance.readOnly = !speakerIsManual;
 
   if (!ampIsManual) {
     applyAmpModel();
@@ -247,6 +331,9 @@ function syncCatalogMode() {
 
   if (!speakerIsManual) {
     applySpeakerModel();
+  } else {
+    elements.speakerImpedanceVariantGroup.hidden = true;
+    elements.speakerImpedanceVariant.innerHTML = "";
   }
 }
 
@@ -264,6 +351,7 @@ function restoreDraft() {
 function getInputs() {
   const ampModel = getCatalogModel(AMP_CATALOG, elements.ampBrand.value, elements.ampModelSelect.value);
   const speakerModel = getCatalogModel(SPEAKER_CATALOG, elements.speakerBrand.value, elements.speakerModelSelect.value);
+  const selectedSpeakerImpedance = elements.speakerImpedanceVariant.value || elements.speakerImpedance.value;
 
   return {
     projectName: elements.projectName.value.trim(),
@@ -276,7 +364,7 @@ function getInputs() {
     speakerBrand: elements.speakerBrand.value,
     speakerModelName: speakerModel?.model || "",
     speakerCount: Math.max(1, Number.parseInt(elements.speakerCount.value, 10) || 1),
-    speakerImpedance: Math.max(0, Number.parseFloat(elements.speakerImpedance.value) || 0),
+    speakerImpedance: Math.max(0, Number.parseFloat(selectedSpeakerImpedance) || 0),
     speakerWattage: Math.max(0, Number.parseFloat(elements.speakerWattage.value) || 0),
   };
 }
@@ -737,6 +825,11 @@ elements.speakerModelSelect.addEventListener("change", () => {
   updatePlanner();
 });
 
+elements.speakerImpedanceVariant.addEventListener("change", () => {
+  elements.speakerImpedance.value = elements.speakerImpedanceVariant.value;
+  updatePlanner();
+});
+
 [elements.projectName, elements.ampName, elements.powerPerChannel, elements.ratedImpedance, elements.channelCount, elements.speakerCount, elements.speakerImpedance, elements.speakerWattage]
   .forEach((input) => {
     input.addEventListener("input", updatePlanner);
@@ -749,9 +842,14 @@ elements.resetForm.addEventListener("click", resetForm);
 restoreDraft();
 const restoredAmpModel = elements.ampModelSelect.value || DEFAULTS.ampModelSelect;
 const restoredSpeakerModel = elements.speakerModelSelect.value || DEFAULTS.speakerModelSelect;
+const restoredSpeakerImpedanceVariant = elements.speakerImpedanceVariant.value || DEFAULTS.speakerImpedanceVariant;
 renderCatalogOptions(elements.ampModelSelect, AMP_CATALOG, elements.ampBrand.value);
 renderCatalogOptions(elements.speakerModelSelect, SPEAKER_CATALOG, elements.speakerBrand.value);
 elements.ampModelSelect.value = restoredAmpModel;
 elements.speakerModelSelect.value = restoredSpeakerModel;
 syncCatalogMode();
+if (!elements.speakerImpedanceVariantGroup.hidden && restoredSpeakerImpedanceVariant) {
+  elements.speakerImpedanceVariant.value = restoredSpeakerImpedanceVariant;
+  elements.speakerImpedance.value = restoredSpeakerImpedanceVariant;
+}
 updatePlanner();
