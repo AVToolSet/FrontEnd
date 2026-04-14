@@ -472,6 +472,11 @@ function scoreDistribution(distribution, ratedImpedance, speakerImpedance, power
   const deltaSum = activeChannels.reduce((sum, channel) => sum + (channel.delta || 0), 0);
   const counts = activeChannels.map((channel) => channel.speakerCount);
   const imbalance = counts.length ? Math.max(...counts) - Math.min(...counts) : 0;
+  const averageSpeakers = activeChannels.length
+    ? distribution.reduce((sum, count) => sum + count, 0) / activeChannels.length
+    : 0;
+  const spreadPenalty = counts.reduce((sum, count) => sum + Math.abs(count - averageSpeakers), 0);
+  const maxSpeakersOnChannel = counts.length ? Math.max(...counts) : 0;
 
   return {
     distribution,
@@ -481,6 +486,8 @@ function scoreDistribution(distribution, ratedImpedance, speakerImpedance, power
     activeChannels: activeChannels.length,
     deltaSum,
     imbalance,
+    spreadPenalty,
+    maxSpeakersOnChannel,
   };
 }
 
@@ -501,11 +508,17 @@ function calculateRecommendation(inputs) {
     if (left.safeChannels !== right.safeChannels) {
       return right.safeChannels - left.safeChannels;
     }
-    if (left.deltaSum !== right.deltaSum) {
-      return left.deltaSum - right.deltaSum;
-    }
     if (left.imbalance !== right.imbalance) {
       return left.imbalance - right.imbalance;
+    }
+    if (left.spreadPenalty !== right.spreadPenalty) {
+      return left.spreadPenalty - right.spreadPenalty;
+    }
+    if (left.maxSpeakersOnChannel !== right.maxSpeakersOnChannel) {
+      return left.maxSpeakersOnChannel - right.maxSpeakersOnChannel;
+    }
+    if (left.deltaSum !== right.deltaSum) {
+      return left.deltaSum - right.deltaSum;
     }
     return right.activeChannels - left.activeChannels;
   });
