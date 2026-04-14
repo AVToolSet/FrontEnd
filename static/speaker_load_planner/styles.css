@@ -248,12 +248,18 @@ button:focus {
   border-radius: var(--radius-lg);
 }
 
-.channel-card.safe {
+.channel-card.safe,
+.channel-card.green {
   border-color: rgba(47, 122, 72, 0.22);
 }
 
-.channel-card.compromise {
+.channel-card.compromise,
+.channel-card.yellow {
   border-color: rgba(182, 122, 23, 0.22);
+}
+
+.channel-card.red {
+  border-color: rgba(181, 60, 60, 0.22);
 }
 
 .channel-meta {
@@ -276,6 +282,51 @@ button:focus {
 .meta-box strong {
   display: block;
   margin-top: 6px;
+}
+
+.traffic-light {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.traffic-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.traffic-light.green {
+  color: var(--ok);
+  background: rgba(47, 122, 72, 0.14);
+}
+
+.traffic-light.green .traffic-dot {
+  background: var(--ok);
+}
+
+.traffic-light.yellow {
+  color: #8d6a12;
+  background: rgba(214, 173, 39, 0.2);
+}
+
+.traffic-light.yellow .traffic-dot {
+  background: #d6ad27;
+}
+
+.traffic-light.red {
+  color: #9f2f2f;
+  background: rgba(181, 60, 60, 0.16);
+}
+
+.traffic-light.red .traffic-dot {
+  background: var(--danger);
 }
 
 .wiring-diagram {
