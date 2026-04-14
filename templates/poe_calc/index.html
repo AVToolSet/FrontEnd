@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PoE Budget Calculator</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='poe_calc/styles.css') }}">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Switch Planning Tool</p>
+        <h1>PoE Budget Calculator</h1>
+        <p class="hero-text">
+          Add a switch, assign devices to each PoE port, and instantly see whether your total power draw
+          stays inside the available switch budget.
+        </p>
+      </div>
+      <div class="hero-panel">
+        <a class="home-link" href="{{ url_for('home') }}">Back to Front Page</a>
+        <p class="hero-panel-label">Status Guide</p>
+        <div class="legend"><span class="legend-pill green">Green</span><span>Up to 90% of budget used</span></div>
+        <div class="legend"><span class="legend-pill yellow">Yellow</span><span>More than 90% used</span></div>
+        <div class="legend"><span class="legend-pill red">Red</span><span>More than 100% used</span></div>
+      </div>
+    </header>
+
+    <main class="app-grid">
+      <section class="card">
+        <div class="section-heading">
+          <h2>Switch Details</h2>
+          <p>Enter the switch information to generate the available ports.</p>
+        </div>
+
+        <form class="switch-form">
+          <label>
+            <span>Switch Name</span>
+            <input id="switch-name" type="text" placeholder="e.g. Reception Cabinet">
+          </label>
+
+          <label>
+            <span>Manufacturer</span>
+            <select id="brand">
+              <option value="custom">Custom / Manual Entry</option>
+              <option value="cisco" selected>Cisco</option>
+              <option value="netgear">NETGEAR</option>
+              <option value="aruba">HP Aruba</option>
+              <option value="ubiquiti">Ubiquiti</option>
+              <option value="juniper">Juniper</option>
+            </select>
+          </label>
+
+          <label id="model-select-group">
+            <span>Switch Model</span>
+            <select id="model-select"></select>
+          </label>
+
+          <label id="manual-model-group">
+            <span>Switch Model Number</span>
+            <input id="model" type="text" placeholder="e.g. CBS350-24P-4G">
+          </label>
+
+          <label>
+            <span>Total PoE Budget (W)</span>
+            <input id="poe-budget" type="number" min="0" step="0.1" value="370">
+          </label>
+
+          <label>
+            <span>Switch PoE Type</span>
+            <select id="switch-poe-type">
+              <option value="poe">PoE (15.4W)</option>
+              <option value="poe-plus" selected>PoE+ (30W)</option>
+              <option value="poe-plus-plus-60">PoE++ Type 3 (60W)</option>
+              <option value="poe-plus-plus-90">PoE++ Type 4 (90W)</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Total Number of PoE Ports</span>
+            <input id="port-count" type="number" min="1" step="1" value="8">
+          </label>
+        </form>
+
+        <div class="form-actions">
+          <button id="export-csv" class="action-button primary" type="button">Export CSV</button>
+          <button id="reset-form" class="action-button secondary" type="button">Reset Form</button>
+        </div>
+
+        <p id="catalog-note" class="catalog-note">Catalog models are sourced from vendor references configured in the tool.</p>
+      </section>
+
+      <section class="card status-card" id="status-card" data-state="green">
+        <div class="section-heading">
+          <h2>Budget Status</h2>
+          <p>Live power summary for the configured switch.</p>
+        </div>
+
+        <div class="status-banner">
+          <span id="status-dot" class="status-dot"></span>
+          <div>
+            <p id="status-label" class="status-label">Green</p>
+            <p id="status-message" class="status-message">Plenty of headroom available.</p>
+          </div>
+        </div>
+
+        <div class="summary-grid">
+          <div class="summary-box"><span class="summary-label">Switch Name</span><strong id="summary-name">Not set</strong></div>
+          <div class="summary-box"><span class="summary-label">Switch</span><strong id="summary-model">Not set</strong></div>
+          <div class="summary-box"><span class="summary-label">Available Budget</span><strong id="summary-budget">370.0W</strong></div>
+          <div class="summary-box"><span class="summary-label">Device Usage</span><strong id="summary-usage">0.0W</strong></div>
+          <div class="summary-box"><span class="summary-label">Headroom / Over</span><strong id="summary-headroom">370.0W headroom</strong></div>
+        </div>
+
+        <div class="meter"><div id="meter-fill" class="meter-fill"></div></div>
+        <p id="meter-text" class="meter-text">0.0% of the switch PoE budget is currently assigned.</p>
+      </section>
+
+      <section class="card ports-card">
+        <div class="section-heading">
+          <h2>Port Devices</h2>
+          <p>Assign a device and PoE requirement to each switch port.</p>
+        </div>
+
+        <div class="ports-header">
+          <span>Port</span>
+          <span>Device</span>
+          <span>PoE Type Used</span>
+          <span>Estimated Draw</span>
+        </div>
+
+        <div id="ports-container" class="ports-container"></div>
+      </section>
+    </main>
+  </div>
+
+  <template id="port-row-template">
+    <div class="port-row">
+      <div class="port-badge"></div>
+      <label><input class="device-name" type="text" placeholder="e.g. Access Point"></label>
+      <label>
+        <select class="device-poe-type">
+          <option value="none">No PoE</option>
+          <option value="poe">PoE (15.4W)</option>
+          <option value="poe-plus">PoE+ (30W)</option>
+          <option value="poe-plus-plus-60">PoE++ Type 3 (60W)</option>
+          <option value="poe-plus-plus-90">PoE++ Type 4 (90W)</option>
+        </select>
+      </label>
+      <div class="port-draw">
+        <strong class="device-watts">0.0W</strong>
+        <span class="support-note">Compatible</span>
+      </div>
+    </div>
+  </template>
+
+  <script src="{{ url_for('static', filename='poe_calc/app.js') }}"></script>
+</body>
+</html>

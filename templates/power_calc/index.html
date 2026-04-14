@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDU Load Planner</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='power_calc/styles.css') }}">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Mains Power Tool</p>
+        <h1>PDU Load Planner</h1>
+        <p class="hero-text">
+          Select a PDU or enter one manually, assign mains-powered devices to each outlet, and
+          instantly see total watts, current draw, safe operating headroom, and overload risk.
+        </p>
+      </div>
+      <div class="hero-panel">
+        <a class="home-link" href="{{ url_for('home') }}">Back to Front Page</a>
+        <p class="hero-panel-label">Status Guide</p>
+        <div class="legend"><span class="legend-pill green">Green</span><span>Up to 80% of rated current</span></div>
+        <div class="legend"><span class="legend-pill yellow">Yellow</span><span>More than 80% used</span></div>
+        <div class="legend"><span class="legend-pill red">Red</span><span>More than 100% of rating</span></div>
+      </div>
+    </header>
+
+    <main class="app-grid">
+      <section class="card">
+        <div class="section-heading">
+          <h2>PDU Details</h2>
+          <p>Choose a manufacturer model or manually enter the PDU electrical rating.</p>
+        </div>
+
+        <form class="switch-form">
+          <label>
+            <span>PDU Name</span>
+            <input id="pdu-name" type="text" placeholder="e.g. Rack A AV PDU">
+          </label>
+
+          <label>
+            <span>Manufacturer</span>
+            <select id="brand">
+              <option value="custom">Custom / Manual Entry</option>
+              <option value="gude" selected>Gude</option>
+              <option value="apc">APC</option>
+              <option value="furman">Furman</option>
+              <option value="austin-hughes">Austin Hughes</option>
+              <option value="raritan">Raritan</option>
+              <option value="server-technology">Server Technology</option>
+            </select>
+          </label>
+
+          <label id="model-select-group">
+            <span>PDU Model</span>
+            <select id="model-select"></select>
+          </label>
+
+          <label id="manual-model-group">
+            <span>Manual Model Reference</span>
+            <input id="model" type="text" placeholder="e.g. 16A 8-way horizontal">
+          </label>
+
+          <label>
+            <span>Supply Voltage (V)</span>
+            <input id="supply-voltage" type="number" min="1" step="1" value="230">
+          </label>
+
+          <label>
+            <span>Rated Current (A)</span>
+            <input id="rated-current" type="number" min="0" step="0.1" value="16">
+          </label>
+
+          <label>
+            <span>Outlet Count</span>
+            <input id="outlet-count" type="number" min="1" step="1" value="8">
+          </label>
+        </form>
+
+        <div class="form-actions">
+          <button id="export-csv" class="action-button primary" type="button">Export CSV</button>
+          <button id="reset-form" class="action-button secondary" type="button">Reset Form</button>
+        </div>
+
+        <p id="catalog-note" class="catalog-note">
+          Catalog models include common PDU references. Use manual entry when you need a different rating.
+        </p>
+      </section>
+
+      <section class="card status-card" id="status-card" data-state="green">
+        <div class="section-heading">
+          <h2>Load Status</h2>
+          <p>Live mains power summary for the configured PDU.</p>
+        </div>
+
+        <div class="status-banner">
+          <span id="status-dot" class="status-dot"></span>
+          <div>
+            <p id="status-label" class="status-label">Green</p>
+            <p id="status-message" class="status-message">Plenty of headroom available.</p>
+          </div>
+        </div>
+
+        <div class="summary-grid">
+          <div class="summary-box"><span class="summary-label">PDU Name</span><strong id="summary-name">Not set</strong></div>
+          <div class="summary-box"><span class="summary-label">PDU Model</span><strong id="summary-model">Not set</strong></div>
+          <div class="summary-box"><span class="summary-label">Safe Load (80%)</span><strong id="summary-safe-load">2944W</strong></div>
+          <div class="summary-box"><span class="summary-label">Absolute Limit</span><strong id="summary-limit-load">3680W</strong></div>
+          <div class="summary-box"><span class="summary-label">Device Usage</span><strong id="summary-usage">0W</strong></div>
+          <div class="summary-box"><span class="summary-label">Current Draw</span><strong id="summary-current">0.00A</strong></div>
+          <div class="summary-box"><span class="summary-label">Headroom / Over</span><strong id="summary-headroom">2944W headroom</strong></div>
+        </div>
+
+        <div class="meter"><div id="meter-fill" class="meter-fill"></div></div>
+        <p id="meter-text" class="meter-text">0.0% of the PDU current rating is currently assigned.</p>
+      </section>
+
+      <section class="card ports-card">
+        <div class="section-heading">
+          <h2>Outlet Devices</h2>
+          <p>Assign a mains-powered device and estimated wattage to each outlet.</p>
+        </div>
+
+        <div class="ports-header">
+          <span>Outlet</span>
+          <span>Device</span>
+          <span>Estimated Draw (W)</span>
+          <span>Estimated Current</span>
+        </div>
+
+        <div id="ports-container" class="ports-container"></div>
+      </section>
+    </main>
+  </div>
+
+  <template id="port-row-template">
+    <div class="port-row">
+      <div class="port-badge"></div>
+      <label><input class="device-name" type="text" placeholder="e.g. DSP, monitor, player"></label>
+      <label><input class="device-wattage-input" type="number" min="0" step="1" value="0"></label>
+      <div class="port-draw">
+        <strong class="device-current">0.00A</strong>
+        <span class="support-note">Within limit</span>
+      </div>
+    </div>
+  </template>
+
+  <script src="{{ url_for('static', filename='power_calc/app.js') }}"></script>
+</body>
+</html>

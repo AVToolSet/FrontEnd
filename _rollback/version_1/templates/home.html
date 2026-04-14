@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>proAV Tools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='home.css') }}">
+</head>
+<body>
+  <main class="page-shell">
+    <section class="hero">
+      <p class="eyebrow">Single Render Deployment</p>
+      <h1>Choose the tool you want to open</h1>
+      <p class="hero-copy">
+        This front page keeps the tools together in one deployable service while leaving each tool on its own page.
+      </p>
+    </section>
+
+    <section class="tool-grid" aria-label="Available tools">
+      <a class="tool-card" href="{{ url_for('docreg_index') }}">
+        <p class="tool-kicker">Excel Generator</p>
+        <h2>Document Register</h2>
+        <p>Build a formatted document register workbook and download it immediately.</p>
+        <span>Open Tool</span>
+      </a>
+
+      <a class="tool-card" href="{{ url_for('poe_calc') }}">
+        <p class="tool-kicker">Planning Calculator</p>
+        <h2>PoE Budget Calculator</h2>
+        <p>Check switch budgets, assigned devices, and remaining power headroom.</p>
+        <span>Open Tool</span>
+      </a>
+
+      <a class="tool-card" href="{{ url_for('calcs') }}">
+        <p class="tool-kicker">Suitability Calculator</p>
+        <h2>Amp and Speaker Pairing</h2>
+        <p>Model amplifier channels, speaker loads, and whether the pairing is safe.</p>
+        <span>Open Tool</span>
+      </a>
+    </section>
+  </main>
+</body>
+</html>
