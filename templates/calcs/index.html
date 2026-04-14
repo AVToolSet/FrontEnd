@@ -17,7 +17,8 @@
         <h1>Amp and Speaker Suitability Calculator</h1>
         <p class="hero-copy">
           Add an amp, set its power and impedance rating, then load each channel with speakers.
-          Flip each channel between series and parallel wiring to check total load and safe headroom.
+          Flip any channel between series and parallel wiring to check total load, speaker power,
+          and whether the pairing is safe.
         </p>
       </div>
 
@@ -30,25 +31,25 @@
     </header>
 
     <main class="layout">
-      <section class="panel">
+      <section class="panel" aria-labelledby="project-title">
         <div class="panel-heading">
-          <h2>Project Details</h2>
+          <h2 id="project-title">Project Details</h2>
           <p>Name the job and assign its SEQF reference.</p>
         </div>
         <div id="project-meta" class="amp-grid"></div>
       </section>
 
-      <section class="panel">
+      <section class="panel" aria-labelledby="overview-title">
         <div class="panel-heading">
-          <h2>Overview</h2>
+          <h2 id="overview-title">Overview</h2>
           <p>Quick health check across all amp channels.</p>
         </div>
         <div id="summary-grid" class="summary-grid"></div>
       </section>
 
-      <section class="panel">
+      <section class="panel" aria-labelledby="amps-title">
         <div class="panel-heading">
-          <h2>Amplifiers</h2>
+          <h2 id="amps-title">Amplifiers</h2>
           <p>Step 1: define the amp. Step 2: add speakers to each channel.</p>
         </div>
         <div id="amps-container" class="amps-container"></div>
