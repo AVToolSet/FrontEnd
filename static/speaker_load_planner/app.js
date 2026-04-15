@@ -674,6 +674,9 @@ function scoreDistribution(distribution, ratedImpedance, speakerImpedance, power
   const ampOutputExceededChannels = activeChannels.filter((channel) => channel.ampOutputExceeded).length;
   const powerUnsafeChannels = activeChannels.filter((channel) => !channel.powerSafe).length;
   const impedanceUnsafeChannels = activeChannels.filter((channel) => !channel.impedanceSafe).length;
+  const overloadAmounts = activeChannels.map((channel) => Math.max(0, channel.utilization - 1));
+  const maxOverload = overloadAmounts.length ? Math.max(...overloadAmounts) : 0;
+  const overloadPenalty = overloadAmounts.reduce((sum, value) => sum + value, 0);
 
   return {
     distribution,
@@ -694,6 +697,8 @@ function scoreDistribution(distribution, ratedImpedance, speakerImpedance, power
     ampOutputExceededChannels,
     powerUnsafeChannels,
     impedanceUnsafeChannels,
+    maxOverload,
+    overloadPenalty,
   };
 }
 
@@ -710,9 +715,6 @@ function calculateRecommendation(inputs) {
   scored.sort((left, right) => {
     if (left.allViable !== right.allViable) {
       return left.allViable ? -1 : 1;
-    }
-    if (left.redChannels !== right.redChannels) {
-      return left.redChannels - right.redChannels;
     }
     if (left.ampOutputExceededChannels !== right.ampOutputExceededChannels) {
       return left.ampOutputExceededChannels - right.ampOutputExceededChannels;
@@ -734,6 +736,15 @@ function calculateRecommendation(inputs) {
     }
     if (left.imbalance !== right.imbalance) {
       return left.imbalance - right.imbalance;
+    }
+    if (left.maxOverload !== right.maxOverload) {
+      return left.maxOverload - right.maxOverload;
+    }
+    if (left.overloadPenalty !== right.overloadPenalty) {
+      return left.overloadPenalty - right.overloadPenalty;
+    }
+    if (left.redChannels !== right.redChannels) {
+      return left.redChannels - right.redChannels;
     }
     if (left.spreadPenalty !== right.spreadPenalty) {
       return left.spreadPenalty - right.spreadPenalty;
