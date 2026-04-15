@@ -76,6 +76,22 @@ input, select { width: 100%; border: 1px solid rgba(21,32,26,0.14); border-radiu
 .meter { overflow: hidden; height: 16px; border-radius: 999px; background: rgba(21,32,26,0.08); }
 .meter-fill { width: 0%; height: 100%; border-radius: inherit; background: var(--green); }
 .meter-text { margin: 10px 0 0; }
+.suggestion-panel { margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(21,32,26,0.08); }
+.suggestion-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.suggestion-eyebrow { margin: 0 0 4px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.78rem; font-weight: 700; }
+.suggestion-header h3 { margin: 0; font-size: 1.1rem; }
+.suggestion-summary { margin: 0 0 14px; color: var(--muted); line-height: 1.5; }
+.suggestion-results { display: grid; gap: 12px; }
+.suggestion-item { padding: 14px 16px; border-radius: 18px; background: rgba(255,255,255,0.7); border: 1px solid rgba(21,32,26,0.08); }
+.suggestion-item.primary { border-color: rgba(35, 138, 76, 0.22); background: rgba(228, 246, 234, 0.92); }
+.suggestion-topline { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.suggestion-title { margin: 0; font-size: 1rem; }
+.suggestion-meta { margin: 6px 0 0; color: var(--muted); line-height: 1.5; }
+.suggestion-chip { display: inline-flex; align-items: center; border-radius: 999px; padding: 6px 10px; background: rgba(21,32,26,0.08); font-size: 0.8rem; font-weight: 700; white-space: nowrap; }
+.suggestion-stats { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+.suggestion-stat { display: inline-flex; align-items: center; border-radius: 999px; padding: 6px 10px; background: rgba(255,255,255,0.9); border: 1px solid rgba(21,32,26,0.08); font-size: 0.84rem; }
+.suggestion-source { margin: 10px 0 0; color: var(--muted); font-size: 0.88rem; line-height: 1.45; }
+.suggestion-empty { padding: 14px 16px; border-radius: 18px; background: rgba(255,255,255,0.65); border: 1px dashed rgba(21,32,26,0.14); color: var(--muted); }
 .ports-header, .port-row { display: grid; grid-template-columns: 92px minmax(180px, 1fr) minmax(180px, 220px) 170px; gap: 14px; align-items: center; }
 .ports-header { padding: 0 8px 10px; border-bottom: 1px solid rgba(21,32,26,0.08); color: var(--muted); font-size: 0.86rem; text-transform: uppercase; letter-spacing: 0.05em; }
 .ports-container { display: grid; gap: 12px; margin-top: 16px; }

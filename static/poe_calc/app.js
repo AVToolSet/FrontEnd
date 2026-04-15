@@ -185,6 +185,9 @@ const elements = {
   statusDot: document.querySelector("#status-dot"),
   statusLabel: document.querySelector("#status-label"),
   statusMessage: document.querySelector("#status-message"),
+  suggestSwitch: document.querySelector("#suggest-switch"),
+  suggestionSummary: document.querySelector("#suggestion-summary"),
+  suggestionResults: document.querySelector("#suggestion-results"),
   summaryName: document.querySelector("#summary-name"),
   summaryModel: document.querySelector("#summary-model"),
   summaryBudget: document.querySelector("#summary-budget"),
@@ -234,6 +237,15 @@ function csvSafe(value) {
   return `"${text.replaceAll('"', '""')}"`;
 }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 function defaultCatalogModelIndex(brand) {
   if (!SWITCH_CATALOG[brand]) {
     return "";
@@ -253,6 +265,152 @@ function downloadCsvInBrowser(fileName, csv) {
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
+}
+
+function getActiveRows() {
+  return [...elements.portsContainer.querySelectorAll(".port-row")].filter((row) => {
+    const deviceName = row.querySelector(".device-name").value.trim();
+    const poeType = row.querySelector(".device-poe-type").value;
+    return deviceName || poeType !== "none";
+  });
+}
+
+function getRequirementsFromRows(rows = getActiveRows()) {
+  return rows.reduce((summary, row) => {
+    const poeType = row.querySelector(".device-poe-type").value;
+    const type = POE_TYPES[poeType];
+
+    return {
+      portCount: summary.portCount + 1,
+      totalWatts: summary.totalWatts + type.watts,
+      highestRank: Math.max(summary.highestRank, type.rank),
+    };
+  }, { portCount: 0, totalWatts: 0, highestRank: 0 });
+}
+
+function buildCatalogCandidates(brandKeys = Object.keys(SWITCH_CATALOG)) {
+  return brandKeys.flatMap((brandKey) => (
+    SWITCH_CATALOG[brandKey].models.map((model) => ({
+      ...model,
+      brandKey,
+      brandLabel: SWITCH_CATALOG[brandKey].label,
+    }))
+  ));
+}
+
+function getSuggestionScope() {
+  if (elements.brand.value !== "custom" && SWITCH_CATALOG[elements.brand.value]) {
+    return {
+      candidates: buildCatalogCandidates([elements.brand.value]),
+      scopeLabel: `within ${SWITCH_CATALOG[elements.brand.value].label}`,
+      fallbackScopeLabel: "across the built-in catalog",
+    };
+  }
+
+  return {
+    candidates: buildCatalogCandidates(),
+    scopeLabel: "across the built-in catalog",
+    fallbackScopeLabel: "across the built-in catalog",
+  };
+}
+
+function getHighestRequirementLabel(highestRank) {
+  return Object.values(POE_TYPES).find((type) => type.rank === highestRank)?.label || "the required PoE type";
+}
+
+function getFallbackSuggestionResult(requirements) {
+  const globalSuggestions = rankSuggestions(buildCatalogCandidates(), requirements);
+
+  return {
+    suggestions: globalSuggestions,
+    scopeLabel: "across the built-in catalog",
+    usedFallback: true,
+  };
+}
+
+function rankSuggestions(candidates, requirements) {
+  return candidates
+    .filter((candidate) => (
+      candidate.poePorts >= requirements.portCount
+      && candidate.poeBudget >= requirements.totalWatts
+      && POE_TYPES[candidate.poeType].rank >= requirements.highestRank
+    ))
+    .sort((left, right) => {
+      const leftPortHeadroom = left.poePorts - requirements.portCount;
+      const rightPortHeadroom = right.poePorts - requirements.portCount;
+
+      if (leftPortHeadroom !== rightPortHeadroom) {
+        return leftPortHeadroom - rightPortHeadroom;
+      }
+
+      const leftBudgetHeadroom = left.poeBudget - requirements.totalWatts;
+      const rightBudgetHeadroom = right.poeBudget - requirements.totalWatts;
+
+      if (leftBudgetHeadroom !== rightBudgetHeadroom) {
+        return leftBudgetHeadroom - rightBudgetHeadroom;
+      }
+
+      return left.model.localeCompare(right.model);
+    });
+}
+
+function renderSuggestions(suggestions, requirements, scopeLabel, usedFallback = false) {
+  if (requirements.portCount === 0) {
+    elements.suggestionSummary.textContent = "Add at least one active device to get a switch recommendation.";
+    elements.suggestionResults.innerHTML = '<div class="suggestion-empty">No active devices to size yet.</div>';
+    return;
+  }
+
+  if (suggestions.length === 0) {
+    elements.suggestionSummary.textContent = `No catalog switch currently matches ${requirements.portCount} active device(s), ${formatWatts(requirements.totalWatts)} of PoE load, and ${getHighestRequirementLabel(requirements.highestRank)}.`;
+    elements.suggestionResults.innerHTML = '<div class="suggestion-empty">Try another manufacturer or reduce the active device load.</div>';
+    return;
+  }
+
+  const topSuggestions = suggestions.slice(0, 3);
+  const fallbackNote = usedFallback ? " Current brand could not meet the requirement, so these results use the full catalog." : "";
+
+  elements.suggestionSummary.textContent = `Best matches ${scopeLabel} for ${requirements.portCount} active device(s) using ${formatWatts(requirements.totalWatts)}.${fallbackNote}`;
+  elements.suggestionResults.innerHTML = topSuggestions
+    .map((suggestion, index) => {
+      const portHeadroom = suggestion.poePorts - requirements.portCount;
+      const budgetHeadroom = suggestion.poeBudget - requirements.totalWatts;
+      const poeTypeLabel = POE_TYPES[suggestion.poeType].label;
+
+      return `
+        <div class="suggestion-item${index === 0 ? " primary" : ""}">
+          <div class="suggestion-topline">
+            <div>
+              <p class="suggestion-title">${escapeHtml(suggestion.brandLabel)} ${escapeHtml(suggestion.model)}</p>
+              <p class="suggestion-meta">${escapeHtml(suggestion.family)} | ${escapeHtml(poeTypeLabel)}</p>
+            </div>
+            <span class="suggestion-chip">${index === 0 ? "Best fit" : "Option " + (index + 1)}</span>
+          </div>
+          <div class="suggestion-stats">
+            <span class="suggestion-stat">${suggestion.poePorts} PoE ports</span>
+            <span class="suggestion-stat">${formatWatts(suggestion.poeBudget)} budget</span>
+            <span class="suggestion-stat">${portHeadroom} spare port${portHeadroom === 1 ? "" : "s"}</span>
+            <span class="suggestion-stat">${formatWatts(budgetHeadroom)} headroom</span>
+          </div>
+          <p class="suggestion-source">Source: ${escapeHtml(suggestion.source)}</p>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+function suggestSuitableSwitch() {
+  const requirements = getRequirementsFromRows();
+  const suggestionScope = getSuggestionScope();
+  const directSuggestions = rankSuggestions(suggestionScope.candidates, requirements);
+
+  if (directSuggestions.length > 0 || suggestionScope.scopeLabel === "across the built-in catalog") {
+    renderSuggestions(directSuggestions, requirements, suggestionScope.scopeLabel);
+    return;
+  }
+
+  const fallbackResult = getFallbackSuggestionResult(requirements);
+  renderSuggestions(fallbackResult.suggestions, requirements, fallbackResult.scopeLabel, fallbackResult.usedFallback);
 }
 
 function createPortRow(index) {
@@ -577,6 +735,8 @@ elements.removeDevice.addEventListener("click", () => {
   elements.portsContainer.lastElementChild.remove();
   updateCalculator();
 });
+
+elements.suggestSwitch.addEventListener("click", suggestSuitableSwitch);
 
 [elements.switchName, elements.model, elements.budget, elements.switchType, elements.portCount].forEach((input) => {
   input.addEventListener("input", updateCalculator);
