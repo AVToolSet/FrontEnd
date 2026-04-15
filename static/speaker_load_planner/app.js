@@ -716,6 +716,47 @@ function calculateRecommendation(inputs) {
     if (left.allViable !== right.allViable) {
       return left.allViable ? -1 : 1;
     }
+
+    if (!left.allViable && !right.allViable) {
+      if (left.balancePenalty !== right.balancePenalty) {
+        return left.balancePenalty - right.balancePenalty;
+      }
+      if (left.imbalance !== right.imbalance) {
+        return left.imbalance - right.imbalance;
+      }
+      if (left.maxOverload !== right.maxOverload) {
+        return left.maxOverload - right.maxOverload;
+      }
+      if (left.overloadPenalty !== right.overloadPenalty) {
+        return left.overloadPenalty - right.overloadPenalty;
+      }
+      if (left.maxSpeakersOnChannel !== right.maxSpeakersOnChannel) {
+        return left.maxSpeakersOnChannel - right.maxSpeakersOnChannel;
+      }
+      if (left.activeChannels !== right.activeChannels) {
+        return right.activeChannels - left.activeChannels;
+      }
+      if (left.ampOutputExceededChannels !== right.ampOutputExceededChannels) {
+        return left.ampOutputExceededChannels - right.ampOutputExceededChannels;
+      }
+      if (left.powerUnsafeChannels !== right.powerUnsafeChannels) {
+        return left.powerUnsafeChannels - right.powerUnsafeChannels;
+      }
+      if (left.impedanceUnsafeChannels !== right.impedanceUnsafeChannels) {
+        return left.impedanceUnsafeChannels - right.impedanceUnsafeChannels;
+      }
+      if (left.utilizationPenalty !== right.utilizationPenalty) {
+        return left.utilizationPenalty - right.utilizationPenalty;
+      }
+      if (left.powerGapPenalty !== right.powerGapPenalty) {
+        return left.powerGapPenalty - right.powerGapPenalty;
+      }
+      if (left.deltaSum !== right.deltaSum) {
+        return left.deltaSum - right.deltaSum;
+      }
+      return left.redChannels - right.redChannels;
+    }
+
     if (left.ampOutputExceededChannels !== right.ampOutputExceededChannels) {
       return left.ampOutputExceededChannels - right.ampOutputExceededChannels;
     }
