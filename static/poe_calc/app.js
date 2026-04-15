@@ -175,6 +175,7 @@ const elements = {
   switchType: document.querySelector("#switch-poe-type"),
   portCount: document.querySelector("#port-count"),
   addDevice: document.querySelector("#add-device"),
+  removeDevice: document.querySelector("#remove-device"),
   exportCsv: document.querySelector("#export-csv"),
   resetForm: document.querySelector("#reset-form"),
   catalogNote: document.querySelector("#catalog-note"),
@@ -565,6 +566,15 @@ elements.modelSelect.addEventListener("change", () => {
 
 elements.addDevice.addEventListener("click", () => {
   syncPortRows(elements.portsContainer.children.length + 1);
+  updateCalculator();
+});
+
+elements.removeDevice.addEventListener("click", () => {
+  if (elements.portsContainer.children.length <= 1) {
+    return;
+  }
+
+  elements.portsContainer.lastElementChild.remove();
   updateCalculator();
 });
 
