@@ -179,7 +179,9 @@ const DEFAULTS = {
   ampBrand: "extron",
   ampModelSelect: "0",
   powerPerChannel: "200",
-  ratedImpedance: "4",
+  nominalImpedance: "4",
+  minImpedance: "4",
+  maxImpedance: "8",
   channelCount: "2",
   speakerBrand: "extron",
   speakerModelSelect: "0",
@@ -196,7 +198,9 @@ const elements = {
   ampModelSelect: document.querySelector("#amp-model-select"),
   ampModelGroup: document.querySelector("#amp-model-group"),
   powerPerChannel: document.querySelector("#power-per-channel"),
-  ratedImpedance: document.querySelector("#rated-impedance"),
+  nominalImpedance: document.querySelector("#nominal-impedance"),
+  minImpedance: document.querySelector("#min-impedance"),
+  maxImpedance: document.querySelector("#max-impedance"),
   channelCount: document.querySelector("#channel-count"),
   speakerBrand: document.querySelector("#speaker-brand"),
   speakerModelSelect: document.querySelector("#speaker-model-select"),
@@ -277,7 +281,9 @@ function getInputState() {
     ampBrand: elements.ampBrand.value,
     ampModelSelect: elements.ampModelSelect.value,
     powerPerChannel: elements.powerPerChannel.value,
-    ratedImpedance: elements.ratedImpedance.value,
+    nominalImpedance: elements.nominalImpedance.value,
+    minImpedance: elements.minImpedance.value,
+    maxImpedance: elements.maxImpedance.value,
     channelCount: elements.channelCount.value,
     speakerBrand: elements.speakerBrand.value,
     speakerModelSelect: elements.speakerModelSelect.value,
@@ -294,6 +300,31 @@ function getCatalogModel(catalog, brand, indexValue) {
     return null;
   }
   return brandCatalog.models[Number.parseInt(indexValue, 10) || 0] || null;
+}
+
+function getAmpImpedanceSpec(brand, model) {
+  const nominal = model?.nominalImpedance ?? model?.ratedImpedance ?? 4;
+
+  if (model?.minImpedance || model?.maxImpedance) {
+    return {
+      nominalImpedance: nominal,
+      minImpedance: model.minImpedance ?? nominal,
+      maxImpedance: model.maxImpedance ?? nominal,
+    };
+  }
+
+  if (brand === "k-array") {
+    return { nominalImpedance: 4, minImpedance: 4, maxImpedance: 16 };
+  }
+
+  if (brand === "crown") {
+    if (model?.model?.startsWith("DCi")) {
+      return { nominalImpedance: nominal, minImpedance: 2, maxImpedance: 16 };
+    }
+    return { nominalImpedance: nominal, minImpedance: 2, maxImpedance: 8 };
+  }
+
+  return { nominalImpedance: nominal, minImpedance: 4, maxImpedance: 8 };
 }
 
 function renderCatalogOptions(selectElement, catalog, brand) {
@@ -316,9 +347,12 @@ function applyAmpModel() {
     return;
   }
 
+  const impedanceSpec = getAmpImpedanceSpec(elements.ampBrand.value, selectedModel);
   elements.ampName.value = selectedModel.model;
   elements.powerPerChannel.value = String(selectedModel.powerPerChannel);
-  elements.ratedImpedance.value = String(selectedModel.ratedImpedance);
+  elements.nominalImpedance.value = String(impedanceSpec.nominalImpedance);
+  elements.minImpedance.value = String(impedanceSpec.minImpedance);
+  elements.maxImpedance.value = String(impedanceSpec.maxImpedance);
   elements.channelCount.value = String(selectedModel.channelCount);
 }
 
@@ -372,7 +406,16 @@ function syncCatalogMode() {
 
 function restoreDraft() {
   const draft = loadDraft();
-  const source = draft || DEFAULTS;
+  const source = {
+    ...DEFAULTS,
+    ...(draft || {}),
+  };
+
+  if (draft?.ratedImpedance && !draft?.nominalImpedance) {
+    source.nominalImpedance = draft.ratedImpedance;
+    source.minImpedance = draft.ratedImpedance;
+    source.maxImpedance = draft.ratedImpedance;
+  }
 
   Object.entries(source).forEach(([key, value]) => {
     if (elements[key]) {
@@ -392,7 +435,9 @@ function getInputs() {
     ampBrand: elements.ampBrand.value,
     ampModelName: ampModel?.model || "",
     powerPerChannel: Math.max(0, Number.parseFloat(elements.powerPerChannel.value) || 0),
-    ratedImpedance: Math.max(0, Number.parseFloat(elements.ratedImpedance.value) || 0),
+    nominalImpedance: Math.max(0, Number.parseFloat(elements.nominalImpedance.value) || 0),
+    minImpedance: Math.max(0, Number.parseFloat(elements.minImpedance.value) || 0),
+    maxImpedance: Math.max(0, Number.parseFloat(elements.maxImpedance.value) || 0),
     channelCount: Math.max(1, Number.parseInt(elements.channelCount.value, 10) || 1),
     speakerBrand: elements.speakerBrand.value,
     speakerModelName: speakerModel?.model || "",
@@ -485,8 +530,8 @@ function buildWiringDiagram(name, groups, topology) {
   return lines.join("\n");
 }
 
-function buildPlanForCount(speakerCount, speakerImpedance, ratedImpedance, powerPerChannel, speakerWattage) {
-  if (speakerCount <= 0 || speakerImpedance <= 0 || ratedImpedance <= 0 || powerPerChannel <= 0) {
+function buildPlanForCount(speakerCount, speakerImpedance, nominalImpedance, minImpedance, maxImpedance, powerPerChannel, speakerWattage) {
+  if (speakerCount <= 0 || speakerImpedance <= 0 || nominalImpedance <= 0 || minImpedance <= 0 || powerPerChannel <= 0) {
     return null;
   }
 
@@ -533,15 +578,18 @@ function buildPlanForCount(speakerCount, speakerImpedance, ratedImpedance, power
 
   const totalSpeakerPower = speakerCount * speakerWattage;
   const ranked = candidates.map((candidate) => {
-    const impedanceSafe = candidate.totalImpedance >= ratedImpedance;
-    const projectedAmpOutput = estimateAmpPowerAtLoad(powerPerChannel, ratedImpedance, candidate.totalImpedance);
+    const impedanceSafe = candidate.totalImpedance >= minImpedance;
+    const projectedAmpOutput = estimateAmpPowerAtLoad(powerPerChannel, nominalImpedance, candidate.totalImpedance);
     const ampOutputExceeded = projectedAmpOutput > powerPerChannel;
     const availableAmpOutput = impedanceSafe ? Math.min(projectedAmpOutput, powerPerChannel) : 0;
     const utilization = availableAmpOutput > 0 ? totalSpeakerPower / availableAmpOutput : Infinity;
     const powerSafe = utilization <= 1;
     const powerGap = Math.abs(availableAmpOutput - totalSpeakerPower);
-    const impedanceRatio = ratedImpedance > 0 ? candidate.totalImpedance / ratedImpedance : Infinity;
+    const impedanceRatio = nominalImpedance > 0 ? candidate.totalImpedance / nominalImpedance : Infinity;
     const impedanceMatchPenalty = Math.abs(Math.log2(impedanceRatio));
+    const rangePenalty = maxImpedance > 0 && candidate.totalImpedance > maxImpedance
+      ? candidate.totalImpedance - maxImpedance
+      : 0;
 
     return {
       ...candidate,
@@ -556,8 +604,9 @@ function buildPlanForCount(speakerCount, speakerImpedance, ratedImpedance, power
       totalSpeakerPower,
       utilization,
       powerGap,
-      delta: Math.abs(candidate.totalImpedance - ratedImpedance),
+      delta: Math.abs(candidate.totalImpedance - nominalImpedance),
       impedanceMatchPenalty,
+      rangePenalty,
       status: getTrafficStatus(utilization, impedanceSafe),
     };
   }).filter((candidate) => Number.isFinite(candidate.totalImpedance) && candidate.totalImpedance > 0);
@@ -578,6 +627,9 @@ function buildPlanForCount(speakerCount, speakerImpedance, ratedImpedance, power
     }
     if (left.delta !== right.delta) {
       return left.delta - right.delta;
+    }
+    if (left.rangePenalty !== right.rangePenalty) {
+      return left.rangePenalty - right.rangePenalty;
     }
     if (left.powerGap !== right.powerGap) {
       return left.powerGap - right.powerGap;
@@ -617,7 +669,7 @@ function generateDistributions(totalSpeakers, channelCount) {
   return results;
 }
 
-function scoreDistribution(distribution, ratedImpedance, speakerImpedance, powerPerChannel, speakerWattage) {
+function scoreDistribution(distribution, nominalImpedance, minImpedance, maxImpedance, speakerImpedance, powerPerChannel, speakerWattage) {
   const channelPlans = distribution.map((count, index) => {
     if (count === 0) {
       return {
@@ -627,7 +679,7 @@ function scoreDistribution(distribution, ratedImpedance, speakerImpedance, power
       };
     }
 
-    const plan = buildPlanForCount(count, speakerImpedance, ratedImpedance, powerPerChannel, speakerWattage);
+    const plan = buildPlanForCount(count, speakerImpedance, nominalImpedance, minImpedance, maxImpedance, powerPerChannel, speakerWattage);
     const totalSpeakerPower = plan?.totalSpeakerPower ?? count * speakerWattage;
     const estimatedAmpOutput = plan?.estimatedAmpOutput ?? 0;
     const utilization = plan?.utilization ?? Infinity;
@@ -703,13 +755,21 @@ function scoreDistribution(distribution, ratedImpedance, speakerImpedance, power
 }
 
 function calculateRecommendation(inputs) {
-  if (!inputs.powerPerChannel || !inputs.ratedImpedance || !inputs.channelCount || !inputs.speakerCount || !inputs.speakerImpedance) {
+  if (!inputs.powerPerChannel || !inputs.nominalImpedance || !inputs.minImpedance || !inputs.channelCount || !inputs.speakerCount || !inputs.speakerImpedance) {
     return null;
   }
 
   const distributions = generateDistributions(inputs.speakerCount, inputs.channelCount);
   const scored = distributions.map((distribution) =>
-    scoreDistribution(distribution, inputs.ratedImpedance, inputs.speakerImpedance, inputs.powerPerChannel, inputs.speakerWattage),
+    scoreDistribution(
+      distribution,
+      inputs.nominalImpedance,
+      inputs.minImpedance,
+      inputs.maxImpedance,
+      inputs.speakerImpedance,
+      inputs.powerPerChannel,
+      inputs.speakerWattage,
+    ),
   );
 
   scored.sort((left, right) => {
@@ -929,7 +989,9 @@ function exportCsv() {
     "Amp Name",
     "Amp Model",
     "Power Per Channel W",
-    "Rated Channel Impedance Ohms",
+    "Nominal Channel Impedance Ohms",
+    "Minimum Load Impedance Ohms",
+    "Maximum Preferred Load Impedance Ohms",
     "Channel Count",
     "Speaker Brand",
     "Speaker Model",
@@ -954,7 +1016,9 @@ function exportCsv() {
       inputs.ampName,
       inputs.ampModelName,
       inputs.powerPerChannel,
-      inputs.ratedImpedance,
+      inputs.nominalImpedance,
+      inputs.minImpedance,
+      inputs.maxImpedance,
       inputs.channelCount,
       speakerBrandLabel,
       inputs.speakerModelName,
@@ -1028,7 +1092,7 @@ elements.speakerImpedanceVariant.addEventListener("change", () => {
   updatePlanner();
 });
 
-[elements.projectName, elements.ampName, elements.powerPerChannel, elements.ratedImpedance, elements.channelCount, elements.speakerCount, elements.speakerImpedance, elements.speakerWattage]
+[elements.projectName, elements.ampName, elements.powerPerChannel, elements.nominalImpedance, elements.minImpedance, elements.maxImpedance, elements.channelCount, elements.speakerCount, elements.speakerImpedance, elements.speakerWattage]
   .forEach((input) => {
     input.addEventListener("input", updatePlanner);
     input.addEventListener("change", updatePlanner);
