@@ -174,6 +174,7 @@ const elements = {
   budget: document.querySelector("#poe-budget"),
   switchType: document.querySelector("#switch-poe-type"),
   portCount: document.querySelector("#port-count"),
+  addDevice: document.querySelector("#add-device"),
   exportCsv: document.querySelector("#export-csv"),
   resetForm: document.querySelector("#reset-form"),
   catalogNote: document.querySelector("#catalog-note"),
@@ -271,17 +272,17 @@ function createPortRow(index) {
   return fragment;
 }
 
-function syncPortRows() {
-  const requestedCount = Math.max(1, Number.parseInt(elements.portCount.value, 10) || 1);
+function getSelectedPortCount() {
+  return Math.max(1, Number.parseInt(elements.portCount.value, 10) || 1);
+}
+
+function syncPortRows(targetCount = getSelectedPortCount()) {
+  const requestedCount = Math.max(1, targetCount || 1);
   const currentCount = elements.portsContainer.children.length;
 
   if (currentCount < requestedCount) {
     for (let index = currentCount; index < requestedCount; index += 1) {
       elements.portsContainer.appendChild(createPortRow(index));
-    }
-  } else if (currentCount > requestedCount) {
-    for (let index = currentCount; index > requestedCount; index -= 1) {
-      elements.portsContainer.lastElementChild.remove();
     }
   }
 }
@@ -377,13 +378,16 @@ async function exportToCsv() {
     ["Total Device Usage (W)", totalUsage.toFixed(1)],
     ["Headroom (W)", headroom.toFixed(1)],
     [],
-    ["Port", "Device", "PoE Type", "Estimated Draw (W)", "Compatible"],
+    ["Port", "Device", "PoE Type", "Estimated Draw (W)", "Compatible", "Within Selected Capacity"],
   ];
+
+  const selectedPortCount = getSelectedPortCount();
 
   rows.forEach((row, index) => {
     const deviceName = row.querySelector(".device-name").value.trim();
     const poeType = row.querySelector(".device-poe-type").value;
     const compatible = POE_TYPES[poeType].rank <= POE_TYPES[elements.switchType.value].rank;
+    const withinCapacity = index < selectedPortCount;
 
     lines.push([
       `Port ${index + 1}`,
@@ -391,6 +395,7 @@ async function exportToCsv() {
       POE_TYPES[poeType].label,
       POE_TYPES[poeType].watts.toFixed(1),
       compatible ? "Yes" : "No",
+      withinCapacity ? "Yes" : "No",
     ]);
   });
 
@@ -422,12 +427,8 @@ function resetForm() {
   renderModelOptions();
   elements.modelSelect.value = defaultCatalogModelIndex("cisco");
   syncInputMode();
-
-  const rows = [...elements.portsContainer.querySelectorAll(".port-row")];
-  rows.forEach((row) => {
-    row.querySelector(".device-name").value = "";
-    row.querySelector(".device-poe-type").value = "none";
-  });
+  elements.portsContainer.innerHTML = "";
+  syncPortRows();
 
   updateCalculator();
 }
@@ -447,7 +448,7 @@ function restoreState() {
   elements.budget.value = draft.budget || elements.budget.value;
   elements.switchType.value = draft.switchType || elements.switchType.value;
   elements.portCount.value = draft.portCount || elements.portCount.value;
-  syncPortRows();
+  syncPortRows(Math.max(getSelectedPortCount(), draft.rows?.length || 0));
 
   (draft.rows || []).forEach((savedRow, index) => {
     const row = elements.portsContainer.children[index];
@@ -461,18 +462,31 @@ function restoreState() {
 
 function updatePortCompatibility() {
   const switchRank = POE_TYPES[elements.switchType.value].rank;
+  const selectedPortCount = getSelectedPortCount();
   const rows = [...elements.portsContainer.querySelectorAll(".port-row")];
 
-  rows.forEach((row) => {
+  rows.forEach((row, index) => {
     const typeSelect = row.querySelector(".device-poe-type");
     const wattsOutput = row.querySelector(".device-watts");
     const supportNote = row.querySelector(".support-note");
     const selectedType = POE_TYPES[typeSelect.value];
     const isCompatible = selectedType.rank <= switchRank;
+    const isOverCapacity = index >= selectedPortCount;
+    const noteParts = [];
 
     wattsOutput.textContent = formatWatts(selectedType.watts);
-    supportNote.textContent = isCompatible ? "Compatible" : "Switch type too low";
-    supportNote.classList.toggle("warning", !isCompatible);
+    row.classList.toggle("over-capacity", isOverCapacity);
+
+    if (isOverCapacity) {
+      noteParts.push("Over selected switch capacity");
+    }
+
+    if (!isCompatible) {
+      noteParts.push("Switch type too low");
+    }
+
+    supportNote.textContent = noteParts.join(" | ") || "Compatible";
+    supportNote.classList.toggle("warning", noteParts.length > 0);
   });
 }
 
@@ -481,6 +495,7 @@ function updateCalculator() {
   updatePortCompatibility();
 
   const budget = Math.max(0, Number.parseFloat(elements.budget.value) || 0);
+  const selectedPortCount = getSelectedPortCount();
   const rows = [...elements.portsContainer.querySelectorAll(".port-row")];
   const totalUsage = rows.reduce((sum, row) => {
     const type = row.querySelector(".device-poe-type").value;
@@ -499,6 +514,7 @@ function updateCalculator() {
     const type = row.querySelector(".device-poe-type").value;
     return POE_TYPES[type].rank > POE_TYPES[elements.switchType.value].rank;
   }).length;
+  const overCapacityCount = rows.filter((_, index) => index >= selectedPortCount).length;
 
   elements.statusCard.dataset.state = status.state;
   elements.statusDot.style.backgroundColor = status.color;
@@ -519,15 +535,17 @@ function updateCalculator() {
 
   if (status.state === "red") {
     const compatibilityNote = incompatibleCount > 0 ? ` ${incompatibleCount} port(s) also require a higher PoE type than the switch supports.` : "";
-    elements.statusMessage.textContent = `Assigned devices exceed the switch budget by ${formatWatts(Math.abs(headroom))}.${compatibilityNote}`;
+    const capacityNote = overCapacityCount > 0 ? ` ${overCapacityCount} device(s) are also over the selected switch capacity.` : "";
+    elements.statusMessage.textContent = `Assigned devices exceed the switch budget by ${formatWatts(Math.abs(headroom))}.${capacityNote}${compatibilityNote}`;
     elements.summaryHeadroom.textContent = `${formatWatts(Math.abs(headroom))} over budget`;
+    saveState();
     return;
   }
 
   if (status.state === "yellow") {
-    elements.statusMessage.textContent = `The switch is still within budget, but only ${formatWatts(headroom)} of PoE headroom remains.${incompatibleCount > 0 ? ` ${incompatibleCount} port(s) need a higher PoE type.` : ""}`;
+    elements.statusMessage.textContent = `The switch is still within budget, but only ${formatWatts(headroom)} of PoE headroom remains.${overCapacityCount > 0 ? ` ${overCapacityCount} device(s) are over the selected switch capacity.` : ""}${incompatibleCount > 0 ? ` ${incompatibleCount} port(s) need a higher PoE type.` : ""}`;
   } else {
-    elements.statusMessage.textContent = `The switch has ${formatWatts(headroom)} of PoE headroom remaining.${incompatibleCount > 0 ? ` ${incompatibleCount} port(s) need a higher PoE type.` : ""}`;
+    elements.statusMessage.textContent = `The switch has ${formatWatts(headroom)} of PoE headroom remaining.${overCapacityCount > 0 ? ` ${overCapacityCount} device(s) are over the selected switch capacity.` : ""}${incompatibleCount > 0 ? ` ${incompatibleCount} port(s) need a higher PoE type.` : ""}`;
   }
 
   elements.summaryHeadroom.textContent = `${formatWatts(headroom)} headroom`;
@@ -542,6 +560,11 @@ elements.brand.addEventListener("change", () => {
 
 elements.modelSelect.addEventListener("change", () => {
   applySelectedCatalogModel();
+  updateCalculator();
+});
+
+elements.addDevice.addEventListener("click", () => {
+  syncPortRows(elements.portsContainer.children.length + 1);
   updateCalculator();
 });
 
